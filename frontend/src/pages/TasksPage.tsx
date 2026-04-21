@@ -1,3 +1,111 @@
+import { useState, useEffect } from 'react'
+import type { Task, Category } from '../types'
+import * as tasksApi from '../api/tasks'
+import * as categoriesApi from '../api/categories'
+import Navbar from '../components/Navbar'
+import TaskCard from '../components/TaskCard'
+import TaskModal from '../components/TaskModal'
+import type { TaskPayload } from '../api/tasks'
+import styles from './TasksPage.module.css'
+
 export default function TasksPage() {
-  return <div>Tasks</div>
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [showModal, setShowModal] = useState(false)
+  const [editing, setEditing] = useState<Task | undefined>()
+  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
+
+  useEffect(() => {
+    tasksApi.getTasks().then(setTasks)
+    categoriesApi.getCategories().then(setCategories)
+  }, [])
+
+  async function handleSave(data: TaskPayload) {
+    if (editing) {
+      const updated = await tasksApi.updateTask(editing.id, data)
+      setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+    } else {
+      const created = await tasksApi.createTask(data)
+      setTasks((prev) => [created, ...prev])
+    }
+    setShowModal(false)
+    setEditing(undefined)
+  }
+
+  async function handleToggle(task: Task) {
+    const updated = await tasksApi.updateTask(task.id, { is_completed: !task.is_completed })
+    setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+  }
+
+  async function handleDelete(id: number) {
+    await tasksApi.deleteTask(id)
+    setTasks((prev) => prev.filter((t) => t.id !== id))
+  }
+
+  function openEdit(task: Task) {
+    setEditing(task)
+    setShowModal(true)
+  }
+
+  function closeModal() {
+    setShowModal(false)
+    setEditing(undefined)
+  }
+
+  const filtered = tasks.filter((t) => {
+    if (filter === 'active') return !t.is_completed
+    if (filter === 'completed') return t.is_completed
+    return true
+  })
+
+  return (
+    <div className={styles.page}>
+      <Navbar />
+      <main className={styles.main}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>My Tasks</h1>
+          <button type="button" className={styles.newBtn} onClick={() => setShowModal(true)}>+ New task</button>
+        </div>
+
+        <div className={styles.filters}>
+          {(['all', 'active', 'completed'] as const).map((f) => (
+            <button
+              type="button"
+              key={f}
+              className={`${styles.filterBtn} ${filter === f ? styles.active : ''}`}
+              onClick={() => setFilter(f)}
+            >
+              {f.charAt(0).toUpperCase() + f.slice(1)}
+            </button>
+          ))}
+        </div>
+
+        {filtered.length === 0 ? (
+          <p className={styles.empty}>No tasks here. Create one!</p>
+        ) : (
+          <div className={styles.list}>
+            {filtered.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                categories={categories}
+                onToggle={handleToggle}
+                onEdit={openEdit}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
+        )}
+      </main>
+
+      {showModal && (
+        <TaskModal
+          task={editing}
+          categories={categories}
+          onSave={handleSave}
+          onClose={closeModal}
+        />
+      )}
+    </div>
+  )
 }
