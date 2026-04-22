@@ -6,7 +6,7 @@ import Navbar from '../components/Navbar'
 import TaskCard from '../components/TaskCard'
 import TaskModal from '../components/TaskModal'
 import type { TaskPayload } from '../api/tasks'
-import styles from './TasksPage.module.css'
+import styles from '../styles/TasksPage.module.css'
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([])

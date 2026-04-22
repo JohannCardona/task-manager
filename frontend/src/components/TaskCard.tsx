@@ -1,5 +1,5 @@
 import type { Task, Category } from '../types'
-import styles from './TaskCard.module.css'
+import styles from '../styles/TaskCard.module.css'
 
 interface Props {
   task: Task

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { Task, Category } from '../types'
 import type { TaskPayload } from '../api/tasks'
-import styles from './TaskModal.module.css'
+import styles from '../styles/TaskModal.module.css'
 
 interface Props {
   task?: Task
