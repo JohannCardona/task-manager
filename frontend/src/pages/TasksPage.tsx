@@ -5,13 +5,15 @@ import * as categoriesApi from '../api/categories'
 import Navbar from '../components/Navbar'
 import TaskCard from '../components/TaskCard'
 import TaskModal from '../components/TaskModal'
+import CategoryModal from '../components/CategoryModal'
 import type { TaskPayload } from '../api/tasks'
 import styles from '../styles/TasksPage.module.css'
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [categories, setCategories] = useState<Category[]>([])
-  const [showModal, setShowModal] = useState(false)
+  const [showTaskModal, setShowTaskModal] = useState(false)
+  const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [editing, setEditing] = useState<Task | undefined>()
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
 
@@ -20,7 +22,7 @@ export default function TasksPage() {
     categoriesApi.getCategories().then(setCategories)
   }, [])
 
-  async function handleSave(data: TaskPayload) {
+  async function handleSaveTask(data: TaskPayload) {
     if (editing) {
       const updated = await tasksApi.updateTask(editing.id, data)
       setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
@@ -28,8 +30,14 @@ export default function TasksPage() {
       const created = await tasksApi.createTask(data)
       setTasks((prev) => [created, ...prev])
     }
-    setShowModal(false)
+    setShowTaskModal(false)
     setEditing(undefined)
+  }
+
+  async function handleSaveCategory(name: string, color: string) {
+    const created = await categoriesApi.createCategory(name, color)
+    setCategories((prev) => [...prev, created])
+    setShowCategoryModal(false)
   }
 
   async function handleToggle(task: Task) {
@@ -44,11 +52,11 @@ export default function TasksPage() {
 
   function openEdit(task: Task) {
     setEditing(task)
-    setShowModal(true)
+    setShowTaskModal(true)
   }
 
-  function closeModal() {
-    setShowModal(false)
+  function closeTaskModal() {
+    setShowTaskModal(false)
     setEditing(undefined)
   }
 
@@ -64,7 +72,10 @@ export default function TasksPage() {
       <main className={styles.main}>
         <div className={styles.header}>
           <h1 className={styles.title}>My Tasks</h1>
-          <button type="button" className={styles.newBtn} onClick={() => setShowModal(true)}>+ New task</button>
+          <div className={styles.headerActions}>
+            <button type="button" className={styles.secondaryBtn} onClick={() => setShowCategoryModal(true)}>+ New category</button>
+            <button type="button" className={styles.newBtn} onClick={() => setShowTaskModal(true)}>+ New task</button>
+          </div>
         </div>
 
         <div className={styles.filters}>
@@ -98,12 +109,19 @@ export default function TasksPage() {
         )}
       </main>
 
-      {showModal && (
+      {showTaskModal && (
         <TaskModal
           task={editing}
           categories={categories}
-          onSave={handleSave}
-          onClose={closeModal}
+          onSave={handleSaveTask}
+          onClose={closeTaskModal}
+        />
+      )}
+
+      {showCategoryModal && (
+        <CategoryModal
+          onSave={handleSaveCategory}
+          onClose={() => setShowCategoryModal(false)}
         />
       )}
     </div>
