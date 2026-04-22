@@ -19,6 +19,15 @@
   gap: 0.75rem;
 }
 
+.checkLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  cursor: pointer;
+  min-width: 0;
+}
+
 .checkbox {
   width: 18px;
   height: 18px;
@@ -28,10 +37,12 @@
 }
 
 .title {
-  flex: 1;
   font-weight: 500;
   color: var(--text-h);
   font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .completed .title {

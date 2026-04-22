@@ -18,16 +18,19 @@ export default function TaskCard({ task, categories, onToggle, onEdit, onDelete 
   return (
     <div className={`${styles.card} ${task.is_completed ? styles.completed : ''}`}>
       <div className={styles.top}>
-        <input
-          type="checkbox"
-          className={styles.checkbox}
-          checked={task.is_completed}
-          onChange={() => onToggle(task)}
-        />
-        <span className={styles.title}>{task.title}</span>
+        <label className={styles.checkLabel}>
+          <input
+            type="checkbox"
+            className={styles.checkbox}
+            checked={task.is_completed}
+            onChange={() => onToggle(task)}
+            aria-label={`Mark "${task.title}" as ${task.is_completed ? 'incomplete' : 'complete'}`}
+          />
+          <span className={styles.title}>{task.title}</span>
+        </label>
         <div className={styles.actions}>
-          <button className={styles.btn} onClick={() => onEdit(task)}>Edit</button>
-          <button className={`${styles.btn} ${styles.danger}`} onClick={() => onDelete(task.id)}>Delete</button>
+          <button className={styles.btn} aria-label={`Edit ${task.title}`} onClick={() => onEdit(task)}>Edit</button>
+          <button className={`${styles.btn} ${styles.danger}`} aria-label={`Delete ${task.title}`} onClick={() => onDelete(task.id)}>Delete</button>
         </div>
       </div>
 

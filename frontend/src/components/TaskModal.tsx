@@ -40,8 +40,9 @@ export default function TaskModal({ task, categories, onSave, onClose }: Props) 
         <h2 className={styles.heading}>{task ? 'Edit task' : 'New task'}</h2>
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.field}>
-            <label className={styles.label}>Title</label>
+            <label htmlFor="task-title" className={styles.label}>Title</label>
             <input
+              id="task-title"
               className={styles.input}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -50,8 +51,9 @@ export default function TaskModal({ task, categories, onSave, onClose }: Props) 
             />
           </div>
           <div className={styles.field}>
-            <label className={styles.label}>Description</label>
+            <label htmlFor="task-description" className={styles.label}>Description</label>
             <textarea
+              id="task-description"
               className={styles.input}
               rows={3}
               value={description}
@@ -60,16 +62,16 @@ export default function TaskModal({ task, categories, onSave, onClose }: Props) 
           </div>
           <div className={styles.row}>
             <div className={styles.field}>
-              <label className={styles.label}>Priority</label>
-              <select className={styles.input} value={priority} onChange={(e) => setPriority(e.target.value as TaskPayload['priority'])}>
+              <label htmlFor="task-priority" className={styles.label}>Priority</label>
+              <select id="task-priority" className={styles.input} value={priority} onChange={(e) => setPriority(e.target.value as TaskPayload['priority'])}>
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
               </select>
             </div>
             <div className={styles.field}>
-              <label className={styles.label}>Category</label>
-              <select className={styles.input} value={categoryId} onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : '')}>
+              <label htmlFor="task-category" className={styles.label}>Category</label>
+              <select id="task-category" className={styles.input} value={categoryId} onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : '')}>
                 <option value="">None</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
@@ -78,8 +80,9 @@ export default function TaskModal({ task, categories, onSave, onClose }: Props) 
             </div>
           </div>
           <div className={styles.field}>
-            <label className={styles.label}>Deadline</label>
+            <label htmlFor="task-deadline" className={styles.label}>Deadline</label>
             <input
+              id="task-deadline"
               className={styles.input}
               type="datetime-local"
               value={deadline}
