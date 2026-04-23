@@ -54,6 +54,14 @@
   gap: 0.5rem;
 }
 
+.confirmText {
+  font-size: 0.8rem;
+  color: var(--error);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
 .btn {
   background: none;
   border: 1px solid var(--border);

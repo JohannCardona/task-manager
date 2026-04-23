@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Task, Category } from '../types'
 import styles from '../styles/TaskCard.module.css'
 
@@ -12,6 +13,7 @@ interface Props {
 const PRIORITY_LABEL = { low: 'Low', medium: 'Medium', high: 'High' }
 
 export default function TaskCard({ task, categories, onToggle, onEdit, onDelete }: Props) {
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const category = categories.find((c) => c.id === task.category_id)
   const isOverdue = task.deadline && !task.is_completed && new Date(task.deadline) < new Date()
 
@@ -29,8 +31,32 @@ export default function TaskCard({ task, categories, onToggle, onEdit, onDelete 
           <span className={styles.title}>{task.title}</span>
         </label>
         <div className={styles.actions}>
-          <button className={styles.btn} aria-label={`Edit ${task.title}`} onClick={() => onEdit(task)}>Edit</button>
-          <button className={`${styles.btn} ${styles.danger}`} aria-label={`Delete ${task.title}`} onClick={() => onDelete(task.id)}>Delete</button>
+          {confirmDelete ? (
+            <>
+              <span className={styles.confirmText}>Delete?</span>
+              <button
+                type="button"
+                className={`${styles.btn} ${styles.danger}`}
+                aria-label={`Confirm delete ${task.title}`}
+                onClick={() => onDelete(task.id)}
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                className={styles.btn}
+                aria-label="Cancel delete"
+                onClick={() => setConfirmDelete(false)}
+              >
+                No
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" className={styles.btn} aria-label={`Edit ${task.title}`} onClick={() => onEdit(task)}>Edit</button>
+              <button type="button" className={`${styles.btn} ${styles.danger}`} aria-label={`Delete ${task.title}`} onClick={() => setConfirmDelete(true)}>Delete</button>
+            </>
+          )}
         </div>
       </div>
 
