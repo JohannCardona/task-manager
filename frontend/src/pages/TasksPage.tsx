@@ -7,6 +7,7 @@ import TaskCard from '../components/TaskCard'
 import TaskModal from '../components/TaskModal'
 import CategoryModal from '../components/CategoryModal'
 import type { TaskPayload } from '../api/tasks'
+import { useToast } from '../context/ToastContext'
 import styles from '../styles/TasksPage.module.css'
 
 export default function TasksPage() {
@@ -16,6 +17,7 @@ export default function TasksPage() {
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [editing, setEditing] = useState<Task | undefined>()
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
+  const { addToast } = useToast()
 
   useEffect(() => {
     tasksApi.getTasks().then(setTasks)
@@ -26,9 +28,11 @@ export default function TasksPage() {
     if (editing) {
       const updated = await tasksApi.updateTask(editing.id, data)
       setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+      addToast('Task updated')
     } else {
       const created = await tasksApi.createTask(data)
       setTasks((prev) => [created, ...prev])
+      addToast('Task created')
     }
     setShowTaskModal(false)
     setEditing(undefined)
@@ -38,16 +42,19 @@ export default function TasksPage() {
     const created = await categoriesApi.createCategory(name, color)
     setCategories((prev) => [...prev, created])
     setShowCategoryModal(false)
+    addToast('Category created')
   }
 
   async function handleToggle(task: Task) {
     const updated = await tasksApi.updateTask(task.id, { is_completed: !task.is_completed })
     setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+    addToast(updated.is_completed ? 'Task completed' : 'Task reopened')
   }
 
   async function handleDelete(id: number) {
     await tasksApi.deleteTask(id)
     setTasks((prev) => prev.filter((t) => t.id !== id))
+    addToast('Task deleted', 'error')
   }
 
   function openEdit(task: Task) {
