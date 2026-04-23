@@ -41,11 +41,17 @@ export default function TasksPage() {
   const [editing, setEditing] = useState<Task | undefined>()
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
   const [sort, setSort] = useState<SortKey>('created')
+  const [loading, setLoading] = useState(true)
   const { addToast } = useToast()
 
   useEffect(() => {
-    tasksApi.getTasks().then(setTasks)
-    categoriesApi.getCategories().then(setCategories)
+    Promise.all([tasksApi.getTasks(), categoriesApi.getCategories()]).then(
+      ([fetchedTasks, fetchedCategories]) => {
+        setTasks(fetchedTasks)
+        setCategories(fetchedCategories)
+        setLoading(false)
+      }
+    )
   }, [])
 
   async function handleSaveTask(data: TaskPayload) {
@@ -142,7 +148,9 @@ export default function TasksPage() {
           </div>
         </div>
 
-        {displayed.length === 0 ? (
+        {loading ? (
+          <div className={styles.spinner} aria-label="Loading tasks" />
+        ) : displayed.length === 0 ? (
           <p className={styles.empty}>No tasks here. Create one!</p>
         ) : (
           <div className={styles.list}>
