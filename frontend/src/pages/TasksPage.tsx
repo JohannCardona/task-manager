@@ -39,6 +39,7 @@ export default function TasksPage() {
   const [showTaskModal, setShowTaskModal] = useState(false)
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [editing, setEditing] = useState<Task | undefined>()
+  const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
   const [sort, setSort] = useState<SortKey>('created')
   const [loading, setLoading] = useState(true)
@@ -115,13 +116,15 @@ export default function TasksPage() {
   }
 
   const displayed = useMemo(() => {
+    const q = search.trim().toLowerCase()
     const filtered = tasks.filter((t) => {
-      if (filter === 'active') return !t.is_completed
-      if (filter === 'completed') return t.is_completed
+      if (filter === 'active' && t.is_completed) return false
+      if (filter === 'completed' && !t.is_completed) return false
+      if (q && !t.title.toLowerCase().includes(q) && !(t.description ?? '').toLowerCase().includes(q)) return false
       return true
     })
     return sortTasks(filtered, sort)
-  }, [tasks, filter, sort])
+  }, [tasks, filter, sort, search])
 
   return (
     <div className={styles.page}>
@@ -133,6 +136,21 @@ export default function TasksPage() {
             <button type="button" className={styles.secondaryBtn} onClick={() => setShowCategoryModal(true)}>+ New category</button>
             <button type="button" className={styles.newBtn} onClick={() => setShowTaskModal(true)}>+ New task</button>
           </div>
+        </div>
+
+        <div className={styles.searchWrapper}>
+          <span className={styles.searchIcon}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </span>
+          <input
+            type="search"
+            className={styles.searchInput}
+            placeholder="Search tasks..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
 
         <div className={styles.toolbar}>
@@ -170,7 +188,7 @@ export default function TasksPage() {
         ) : fetchError ? (
           <p className={styles.error}>Failed to load tasks. Please refresh the page.</p>
         ) : displayed.length === 0 ? (
-          <p className={styles.empty}>No tasks here. Create one!</p>
+          <p className={styles.empty}>{search.trim() ? 'No tasks match your search.' : 'No tasks here. Create one!'}</p>
         ) : (
           <div className={styles.list}>
             {displayed.map((task) => (
