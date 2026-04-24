@@ -42,49 +42,66 @@ export default function TasksPage() {
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
   const [sort, setSort] = useState<SortKey>('created')
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState(false)
   const { addToast } = useToast()
 
   useEffect(() => {
-    Promise.all([tasksApi.getTasks(), categoriesApi.getCategories()]).then(
-      ([fetchedTasks, fetchedCategories]) => {
+    Promise.all([tasksApi.getTasks(), categoriesApi.getCategories()])
+      .then(([fetchedTasks, fetchedCategories]) => {
         setTasks(fetchedTasks)
         setCategories(fetchedCategories)
-        setLoading(false)
-      }
-    )
+      })
+      .catch(() => setFetchError(true))
+      .finally(() => setLoading(false))
   }, [])
 
   async function handleSaveTask(data: TaskPayload) {
-    if (editing) {
-      const updated = await tasksApi.updateTask(editing.id, data)
-      setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
-      addToast('Task updated')
-    } else {
-      const created = await tasksApi.createTask(data)
-      setTasks((prev) => [created, ...prev])
-      addToast('Task created')
+    try {
+      if (editing) {
+        const updated = await tasksApi.updateTask(editing.id, data)
+        setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+        addToast('Task updated')
+      } else {
+        const created = await tasksApi.createTask(data)
+        setTasks((prev) => [created, ...prev])
+        addToast('Task created')
+      }
+      setShowTaskModal(false)
+      setEditing(undefined)
+    } catch {
+      addToast('Failed to save task', 'error')
     }
-    setShowTaskModal(false)
-    setEditing(undefined)
   }
 
   async function handleSaveCategory(name: string, color: string) {
-    const created = await categoriesApi.createCategory(name, color)
-    setCategories((prev) => [...prev, created])
-    setShowCategoryModal(false)
-    addToast('Category created')
+    try {
+      const created = await categoriesApi.createCategory(name, color)
+      setCategories((prev) => [...prev, created])
+      setShowCategoryModal(false)
+      addToast('Category created')
+    } catch {
+      addToast('Failed to create category', 'error')
+    }
   }
 
   async function handleToggle(task: Task) {
-    const updated = await tasksApi.updateTask(task.id, { is_completed: !task.is_completed })
-    setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
-    addToast(updated.is_completed ? 'Task completed' : 'Task reopened')
+    try {
+      const updated = await tasksApi.updateTask(task.id, { is_completed: !task.is_completed })
+      setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+      addToast(updated.is_completed ? 'Task completed' : 'Task reopened')
+    } catch {
+      addToast('Failed to update task', 'error')
+    }
   }
 
   async function handleDelete(id: number) {
-    await tasksApi.deleteTask(id)
-    setTasks((prev) => prev.filter((t) => t.id !== id))
-    addToast('Task deleted', 'error')
+    try {
+      await tasksApi.deleteTask(id)
+      setTasks((prev) => prev.filter((t) => t.id !== id))
+      addToast('Task deleted', 'error')
+    } catch {
+      addToast('Failed to delete task', 'error')
+    }
   }
 
   function openEdit(task: Task) {
@@ -150,6 +167,8 @@ export default function TasksPage() {
 
         {loading ? (
           <div className={styles.spinner} aria-label="Loading tasks" />
+        ) : fetchError ? (
+          <p className={styles.error}>Failed to load tasks. Please refresh the page.</p>
         ) : displayed.length === 0 ? (
           <p className={styles.empty}>No tasks here. Create one!</p>
         ) : (

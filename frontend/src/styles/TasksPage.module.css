@@ -138,6 +138,12 @@
   padding: 3rem 0;
 }
 
+.error {
+  color: var(--error);
+  text-align: center;
+  padding: 3rem 0;
+}
+
 .spinner {
   width: 32px;
   height: 32px;
