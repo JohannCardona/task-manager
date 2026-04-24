@@ -35,5 +35,10 @@ def login(payload: UserLogin, db: Session = Depends(get_db)) -> Token:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
         )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is disabled",
+        )
 
     return Token(access_token=create_access_token(subject=user.username))
