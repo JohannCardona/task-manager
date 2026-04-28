@@ -15,8 +15,30 @@
   -webkit-font-smoothing: antialiased;
 }
 
+html[data-theme="light"] {
+  --text: #6b6375;
+  --text-h: #08060d;
+  --bg: #fff;
+  --bg-card: #fafafa;
+  --border: #e5e4e7;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  --text: #9ca3af;
+  --text-h: #f3f4f6;
+  --bg: #0f1117;
+  --bg-card: #1a1d27;
+  --border: #2e303a;
+  --accent: #818cf8;
+  --accent-hover: #6366f1;
+  color-scheme: dark;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
     --text: #9ca3af;
     --text-h: #f3f4f6;
     --bg: #0f1117;
@@ -24,6 +46,7 @@
     --border: #2e303a;
     --accent: #818cf8;
     --accent-hover: #6366f1;
+    color-scheme: dark;
   }
 }
 

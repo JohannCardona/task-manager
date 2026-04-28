@@ -1,0 +1,17 @@
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.375rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}

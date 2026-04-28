@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import ThemeToggle from '../components/ThemeToggle'
 import styles from '../styles/AuthForm.module.css'
 
 export default function RegisterPage() {
@@ -29,6 +30,7 @@ export default function RegisterPage() {
 
   return (
     <div className={styles.page}>
+      <ThemeToggle className={styles.themeToggle} />
       <div className={styles.card}>
         <h1 className={styles.heading}>Create account</h1>
         <form className={styles.form} onSubmit={handleSubmit}>
