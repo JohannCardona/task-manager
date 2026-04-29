@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.security import create_access_token, create_refresh_token, decode_refresh_token, hash_password, verify_password
 from app.models.user import User
-from app.schemas.user import Token, UserLogin, UserOut, UserRegister
+from app.schemas.user import RefreshRequest, Token, UserLogin, UserOut, UserRegister
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -41,4 +41,23 @@ def login(payload: UserLogin, db: Session = Depends(get_db)) -> Token:
             detail="Account is disabled",
         )
 
-    return Token(access_token=create_access_token(subject=user.username))
+    return Token(
+        access_token=create_access_token(subject=user.username),
+        refresh_token=create_refresh_token(subject=user.username),
+    )
+
+
+@router.post("/refresh", response_model=Token)
+def refresh(payload: RefreshRequest, db: Session = Depends(get_db)) -> Token:
+    username = decode_refresh_token(payload.refresh_token)
+    if username is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token")
+
+    user = db.query(User).filter(User.username == username).first()
+    if user is None or not user.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+
+    return Token(
+        access_token=create_access_token(subject=username),
+        refresh_token=create_refresh_token(subject=username),
+    )

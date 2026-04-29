@@ -18,6 +18,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (username: string, password: string) => {
     const token = await authApi.login(username, password)
     localStorage.setItem('access_token', token.access_token)
+    localStorage.setItem('refresh_token', token.refresh_token)
     setIsAuthenticated(true)
   }, [])
 
@@ -27,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
     setIsAuthenticated(false)
   }, [])
 
