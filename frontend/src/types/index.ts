@@ -14,6 +14,14 @@ export interface Category {
 
 export type Priority = 'low' | 'medium' | 'high'
 
+export interface Subtask {
+  id: number
+  task_id: number
+  title: string
+  is_completed: boolean
+  created_at: string
+}
+
 export interface Task {
   id: number
   title: string
@@ -25,6 +33,7 @@ export interface Task {
   category_id: number | null
   created_at: string
   updated_at: string
+  subtasks: Subtask[]
 }
 
 export interface Token {

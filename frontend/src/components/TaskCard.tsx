@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import type { Task, Category } from '../types'
+import type { Task, Category, Subtask } from '../types'
+import * as subtasksApi from '../api/subtasks'
+import { useToast } from '../context/ToastContext'
 import styles from '../styles/TaskCard.module.css'
 
 interface Props {
@@ -14,8 +16,44 @@ const PRIORITY_LABEL = { low: 'Low', medium: 'Medium', high: 'High' }
 
 export default function TaskCard({ task, categories, onToggle, onEdit, onDelete }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks)
+  const [newSubtask, setNewSubtask] = useState('')
+  const { addToast } = useToast()
+
   const category = categories.find((c) => c.id === task.category_id)
   const isOverdue = task.deadline && !task.is_completed && new Date(task.deadline) < new Date()
+  const doneCount = subtasks.filter((s) => s.is_completed).length
+
+  async function handleToggleSubtask(subtask: Subtask) {
+    try {
+      const updated = await subtasksApi.updateSubtask(task.id, subtask.id, { is_completed: !subtask.is_completed })
+      setSubtasks((prev) => prev.map((s) => (s.id === updated.id ? updated : s)))
+    } catch {
+      addToast('Failed to update subtask', 'error')
+    }
+  }
+
+  async function handleDeleteSubtask(subtaskId: number) {
+    try {
+      await subtasksApi.deleteSubtask(task.id, subtaskId)
+      setSubtasks((prev) => prev.filter((s) => s.id !== subtaskId))
+    } catch {
+      addToast('Failed to delete subtask', 'error')
+    }
+  }
+
+  async function handleAddSubtask(e: { preventDefault(): void }) {
+    e.preventDefault()
+    const title = newSubtask.trim()
+    if (!title) return
+    try {
+      const created = await subtasksApi.createSubtask(task.id, title)
+      setSubtasks((prev) => [...prev, created])
+      setNewSubtask('')
+    } catch {
+      addToast('Failed to add subtask', 'error')
+    }
+  }
 
   return (
     <div className={`${styles.card} ${task.is_completed ? styles.completed : ''}`}>
@@ -76,6 +114,46 @@ export default function TaskCard({ task, categories, onToggle, onEdit, onDelete 
             {new Date(task.deadline).toLocaleDateString()}
           </span>
         )}
+        {subtasks.length > 0 && (
+          <span className={styles.subtaskCount}>{doneCount}/{subtasks.length} subtasks</span>
+        )}
+      </div>
+
+      <div className={styles.subtasks}>
+        {subtasks.map((subtask) => (
+          <div key={subtask.id} className={styles.subtaskRow}>
+            <label className={styles.subtaskLabel}>
+              <input
+                type="checkbox"
+                className={styles.checkbox}
+                checked={subtask.is_completed}
+                onChange={() => handleToggleSubtask(subtask)}
+              />
+              <span className={`${styles.subtaskTitle} ${subtask.is_completed ? styles.subtaskDone : ''}`}>
+                {subtask.title}
+              </span>
+            </label>
+            <button
+              type="button"
+              className={styles.subtaskDelete}
+              aria-label={`Delete subtask ${subtask.title}`}
+              onClick={() => handleDeleteSubtask(subtask.id)}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+
+        <form className={styles.subtaskForm} onSubmit={handleAddSubtask}>
+          <input
+            type="text"
+            className={styles.subtaskInput}
+            placeholder="Add subtask…"
+            value={newSubtask}
+            onChange={(e) => setNewSubtask(e.target.value)}
+          />
+          <button type="submit" className={styles.subtaskAdd}>Add</button>
+        </form>
       </div>
     </div>
   )

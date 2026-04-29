@@ -13,7 +13,7 @@ if config.config_file_name is not None:
 
 # Import models so Alembic can detect them for autogenerate
 from app.core.database import Base  # noqa: E402
-from app.models import User, Category, Task  # noqa: F401, E402
+from app.models import User, Category, Task, Subtask  # noqa: F401, E402
 
 target_metadata = Base.metadata
 

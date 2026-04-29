@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from app.models.task import Priority
+from app.schemas.subtask import SubtaskOut
 
 
 class TaskCreate(BaseModel):
@@ -33,5 +34,6 @@ class TaskOut(BaseModel):
     category_id: int | None
     created_at: datetime
     updated_at: datetime
+    subtasks: list[SubtaskOut] = []
 
     model_config = {"from_attributes": True}

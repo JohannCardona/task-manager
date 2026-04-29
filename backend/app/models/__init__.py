@@ -1,5 +1,6 @@
 from app.models.user import User
 from app.models.category import Category
 from app.models.task import Task, Priority
+from app.models.subtask import Subtask
 
-__all__ = ["User", "Category", "Task", "Priority"]
+__all__ = ["User", "Category", "Task", "Priority", "Subtask"]

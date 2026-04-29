@@ -30,3 +30,6 @@ class Task(Base):
 
     owner: Mapped["User"] = relationship("User", back_populates="tasks")
     category: Mapped["Category | None"] = relationship("Category", back_populates="tasks")
+    subtasks: Mapped[list["Subtask"]] = relationship(
+        "Subtask", back_populates="task", cascade="all, delete-orphan", order_by="Subtask.id", lazy="selectin"
+    )
