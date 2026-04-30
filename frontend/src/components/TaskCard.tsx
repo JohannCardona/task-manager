@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import type { Task, Category, Subtask } from '../types'
 import * as subtasksApi from '../api/subtasks'
 import { useToast } from '../context/ToastContext'
@@ -7,6 +9,7 @@ import styles from '../styles/TaskCard.module.css'
 interface Props {
   task: Task
   categories: Category[]
+  sortable?: boolean
   onToggle: (task: Task) => void
   onEdit: (task: Task) => void
   onDelete: (id: number) => void
@@ -14,15 +17,25 @@ interface Props {
 
 const PRIORITY_LABEL = { low: 'Low', medium: 'Medium', high: 'High' }
 
-export default function TaskCard({ task, categories, onToggle, onEdit, onDelete }: Props) {
+export default function TaskCard({ task, categories, sortable = false, onToggle, onEdit, onDelete }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks)
   const [newSubtask, setNewSubtask] = useState('')
   const { addToast } = useToast()
 
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
+
   const category = categories.find((c) => c.id === task.category_id)
   const isOverdue = task.deadline && !task.is_completed && new Date(task.deadline) < new Date()
   const doneCount = subtasks.filter((s) => s.is_completed).length
+
+  const dragStyle = sortable
+    ? {
+        '--dnd-transform': CSS.Transform.toString(transform),
+        '--dnd-transition': transition ?? '',
+        '--dnd-opacity': isDragging ? '0.5' : '1',
+      } as React.CSSProperties
+    : {}
 
   async function handleToggleSubtask(subtask: Subtask) {
     try {
@@ -56,8 +69,17 @@ export default function TaskCard({ task, categories, onToggle, onEdit, onDelete 
   }
 
   return (
-    <div className={`${styles.card} ${task.is_completed ? styles.completed : ''}`}>
+    <div
+      ref={sortable ? setNodeRef : undefined}
+      style={dragStyle}
+      className={`${styles.card} ${task.is_completed ? styles.completed : ''}`}
+    >
       <div className={styles.top}>
+        {sortable && (
+          <button type="button" className={styles.dragHandle} aria-label="Drag to reorder" {...listeners} {...attributes}>
+            ⠿
+          </button>
+        )}
         <label className={styles.checkLabel}>
           <input
             type="checkbox"

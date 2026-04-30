@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
+import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
+import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import type { Task, Category } from '../types'
 import * as tasksApi from '../api/tasks'
 import * as categoriesApi from '../api/categories'
@@ -27,8 +29,12 @@ function sortTasks(tasks: Task[], sort: SortKey): Task[] {
         return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]
       case 'status':
         return Number(a.is_completed) - Number(b.is_completed)
-      default:
+      default: {
+        if (a.position !== null && b.position !== null) return a.position - b.position
+        if (a.position !== null) return -1
+        if (b.position !== null) return 1
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      }
     }
   })
 }
@@ -45,6 +51,13 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState(false)
   const { addToast } = useToast()
+
+  const isDraggable = sort === 'created' && filter === 'all' && !search.trim()
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
 
   useEffect(() => {
     Promise.all([tasksApi.getTasks(), categoriesApi.getCategories()])
@@ -64,7 +77,7 @@ export default function TasksPage() {
         addToast('Task updated')
       } else {
         const created = await tasksApi.createTask(data)
-        setTasks((prev) => [created, ...prev])
+        setTasks((prev) => [...prev, created])
         addToast('Task created')
       }
       setShowTaskModal(false)
@@ -105,6 +118,23 @@ export default function TasksPage() {
     }
   }
 
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = displayed.findIndex((t) => t.id === active.id)
+    const newIndex = displayed.findIndex((t) => t.id === over.id)
+    const reordered = arrayMove(displayed, oldIndex, newIndex).map((t, i) => ({ ...t, position: i }))
+
+    setTasks(reordered)
+
+    try {
+      await tasksApi.reorderTasks(reordered.map((t) => t.id))
+    } catch {
+      addToast('Failed to save order', 'error')
+    }
+  }
+
   function openEdit(task: Task) {
     setEditing(task)
     setShowTaskModal(true)
@@ -125,6 +155,22 @@ export default function TasksPage() {
     })
     return sortTasks(filtered, sort)
   }, [tasks, filter, sort, search])
+
+  const list = (
+    <div className={styles.list}>
+      {displayed.map((task) => (
+        <TaskCard
+          key={task.id}
+          task={task}
+          categories={categories}
+          sortable={isDraggable}
+          onToggle={handleToggle}
+          onEdit={openEdit}
+          onDelete={handleDelete}
+        />
+      ))}
+    </div>
+  )
 
   return (
     <div className={styles.page}>
@@ -175,7 +221,7 @@ export default function TasksPage() {
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
             >
-              <option value="created">Date created</option>
+              <option value="created">Custom order</option>
               <option value="deadline">Deadline</option>
               <option value="priority">Priority</option>
               <option value="status">Status</option>
@@ -189,20 +235,13 @@ export default function TasksPage() {
           <p className={styles.error}>Failed to load tasks. Please refresh the page.</p>
         ) : displayed.length === 0 ? (
           <p className={styles.empty}>{search.trim() ? 'No tasks match your search.' : 'No tasks here. Create one!'}</p>
-        ) : (
-          <div className={styles.list}>
-            {displayed.map((task) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                categories={categories}
-                onToggle={handleToggle}
-                onEdit={openEdit}
-                onDelete={handleDelete}
-              />
-            ))}
-          </div>
-        )}
+        ) : isDraggable ? (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={displayed.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+              {list}
+            </SortableContext>
+          </DndContext>
+        ) : list}
       </main>
 
       {showTaskModal && (

@@ -31,6 +31,7 @@ export interface Task {
   priority: Priority
   owner_id: number
   category_id: number | null
+  position: number | null
   created_at: string
   updated_at: string
   subtasks: Subtask[]

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -8,6 +9,10 @@ from app.models.task import Task
 from app.models.user import User
 from app.schemas.task import TaskCreate, TaskOut, TaskUpdate
 
+
+class ReorderPayload(BaseModel):
+    order: list[int]
+
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
 
@@ -16,7 +21,26 @@ def list_tasks(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> list[Task]:
-    return db.query(Task).filter(Task.owner_id == current_user.id).all()
+    return (
+        db.query(Task)
+        .filter(Task.owner_id == current_user.id)
+        .order_by(Task.position.asc().nulls_last())
+        .all()
+    )
+
+
+@router.put("/reorder", status_code=status.HTTP_204_NO_CONTENT)
+def reorder_tasks(
+    payload: ReorderPayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> None:
+    tasks = db.query(Task).filter(Task.id.in_(payload.order), Task.owner_id == current_user.id).all()
+    task_map = {t.id: t for t in tasks}
+    for pos, task_id in enumerate(payload.order):
+        if task_id in task_map:
+            task_map[task_id].position = pos
+    db.commit()
 
 
 @router.get("/{task_id}", response_model=TaskOut)
@@ -45,7 +69,10 @@ def create_task(
         if not category:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
 
-    task = Task(**payload.model_dump(), owner_id=current_user.id)
+    max_pos = db.query(Task.position).filter(Task.owner_id == current_user.id).order_by(Task.position.desc().nulls_last()).scalar()
+    next_pos = (max_pos + 1) if max_pos is not None else 0
+
+    task = Task(**payload.model_dump(), owner_id=current_user.id, position=next_pos)
     db.add(task)
     db.commit()
     db.refresh(task)

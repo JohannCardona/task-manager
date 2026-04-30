@@ -20,3 +20,6 @@ export const updateTask = (id: number, data: Partial<TaskPayload & { is_complete
 
 export const deleteTask = (id: number): Promise<void> =>
   client.delete(`/tasks/${id}`).then(() => undefined)
+
+export const reorderTasks = (order: number[]): Promise<void> =>
+  client.put('/tasks/reorder', { order }).then(() => undefined)

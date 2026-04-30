@@ -32,6 +32,7 @@ class TaskOut(BaseModel):
     priority: Priority
     owner_id: int
     category_id: int | None
+    position: int | None
     created_at: datetime
     updated_at: datetime
     subtasks: list[SubtaskOut] = []
