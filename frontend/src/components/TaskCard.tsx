@@ -10,6 +10,8 @@ interface Props {
   task: Task
   categories: Category[]
   sortable?: boolean
+  isSelected?: boolean
+  onSelect?: (id: number, selected: boolean) => void
   onToggle: (task: Task) => void
   onEdit: (task: Task) => void
   onDelete: (id: number) => void
@@ -17,7 +19,7 @@ interface Props {
 
 const PRIORITY_LABEL = { low: 'Low', medium: 'Medium', high: 'High' }
 
-export default function TaskCard({ task, categories, sortable = false, onToggle, onEdit, onDelete }: Props) {
+export default function TaskCard({ task, categories, sortable = false, isSelected = false, onSelect, onToggle, onEdit, onDelete }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks)
   const [newSubtask, setNewSubtask] = useState('')
@@ -75,6 +77,15 @@ export default function TaskCard({ task, categories, sortable = false, onToggle,
       className={`${styles.card} ${task.is_completed ? styles.completed : ''}`}
     >
       <div className={styles.top}>
+        {onSelect && (
+          <input
+            type="checkbox"
+            className={styles.selectBox}
+            checked={isSelected}
+            onChange={(e) => onSelect(task.id, e.target.checked)}
+            aria-label={`Select "${task.title}"`}
+          />
+        )}
         {sortable && (
           <button type="button" className={styles.dragHandle} aria-label="Drag to reorder" {...listeners} {...attributes}>
             ⠿

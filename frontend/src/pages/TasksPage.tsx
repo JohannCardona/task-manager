@@ -50,6 +50,8 @@ export default function TasksPage() {
   const [sort, setSort] = useState<SortKey>('created')
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
   const { addToast } = useToast()
 
   const isDraggable = sort === 'created' && filter === 'all' && !search.trim()
@@ -68,6 +70,64 @@ export default function TasksPage() {
       .catch(() => setFetchError(true))
       .finally(() => setLoading(false))
   }, [])
+
+  function handleSelect(id: number, selected: boolean) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (selected) next.add(id)
+      else next.delete(id)
+      return next
+    })
+  }
+
+  function handleSelectAll() {
+    if (selectedIds.size === displayed.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(displayed.map((t) => t.id)))
+    }
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set())
+    setConfirmBulkDelete(false)
+  }
+
+  async function handleBulkComplete(completed: boolean) {
+    const ids = [...selectedIds]
+    try {
+      const updated = await Promise.all(ids.map((id) => tasksApi.updateTask(id, { is_completed: completed })))
+      setTasks((prev) => prev.map((t) => updated.find((u) => u.id === t.id) ?? t))
+      addToast(`${ids.length} task${ids.length > 1 ? 's' : ''} ${completed ? 'completed' : 'reopened'}`)
+      clearSelection()
+    } catch {
+      addToast('Failed to update tasks', 'error')
+    }
+  }
+
+  async function handleBulkCategory(categoryId: number | null) {
+    const ids = [...selectedIds]
+    try {
+      const updated = await Promise.all(ids.map((id) => tasksApi.updateTask(id, { category_id: categoryId ?? undefined })))
+      setTasks((prev) => prev.map((t) => updated.find((u) => u.id === t.id) ?? t))
+      addToast(`Category updated for ${ids.length} task${ids.length > 1 ? 's' : ''}`)
+      clearSelection()
+    } catch {
+      addToast('Failed to update category', 'error')
+    }
+  }
+
+  async function handleBulkDelete() {
+    const ids = [...selectedIds]
+    try {
+      await Promise.all(ids.map((id) => tasksApi.deleteTask(id)))
+      setTasks((prev) => prev.filter((t) => !selectedIds.has(t.id)))
+      addToast(`${ids.length} task${ids.length > 1 ? 's' : ''} deleted`)
+      clearSelection()
+    } catch {
+      addToast('Failed to delete tasks', 'error')
+    }
+  }
 
   async function handleSaveTask(data: TaskPayload) {
     try {
@@ -156,6 +216,8 @@ export default function TasksPage() {
     return sortTasks(filtered, sort)
   }, [tasks, filter, sort, search])
 
+  const allSelected = displayed.length > 0 && selectedIds.size === displayed.length
+
   const list = (
     <div className={styles.list}>
       {displayed.map((task) => (
@@ -164,6 +226,8 @@ export default function TasksPage() {
           task={task}
           categories={categories}
           sortable={isDraggable}
+          isSelected={selectedIds.has(task.id)}
+          onSelect={handleSelect}
           onToggle={handleToggle}
           onEdit={openEdit}
           onDelete={handleDelete}
@@ -228,6 +292,38 @@ export default function TasksPage() {
             </select>
           </div>
         </div>
+
+        {selectedIds.size > 0 && (
+          <div className={styles.bulkBar}>
+            <span className={styles.bulkCount}>{selectedIds.size} selected</span>
+            <button type="button" className={styles.bulkBtn} onClick={handleSelectAll}>
+              {allSelected ? 'Deselect all' : 'Select all'}
+            </button>
+            <button type="button" className={styles.bulkBtn} onClick={() => handleBulkComplete(true)}>Mark complete</button>
+            <button type="button" className={styles.bulkBtn} onClick={() => handleBulkComplete(false)}>Mark active</button>
+            <select
+              className={styles.bulkSelect}
+              value=""
+              onChange={(e) => handleBulkCategory(e.target.value === '' ? null : Number(e.target.value))}
+            >
+              <option value="" disabled>Move to category…</option>
+              <option value="">None</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            {confirmBulkDelete ? (
+              <>
+                <span className={styles.bulkConfirm}>Delete {selectedIds.size}?</span>
+                <button type="button" className={`${styles.bulkBtn} ${styles.bulkDanger}`} onClick={handleBulkDelete}>Yes</button>
+                <button type="button" className={styles.bulkBtn} onClick={() => setConfirmBulkDelete(false)}>No</button>
+              </>
+            ) : (
+              <button type="button" className={`${styles.bulkBtn} ${styles.bulkDanger}`} onClick={() => setConfirmBulkDelete(true)}>Delete</button>
+            )}
+            <button type="button" className={styles.bulkClear} onClick={clearSelection} aria-label="Clear selection">✕</button>
+          </div>
+        )}
 
         {loading ? (
           <div className={styles.spinner} aria-label="Loading tasks" />

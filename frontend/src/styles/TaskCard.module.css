@@ -11,6 +11,14 @@
   opacity: var(--dnd-opacity, 1);
 }
 
+.selectBox {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
 .dragHandle {
   display: flex;
   align-items: center;
