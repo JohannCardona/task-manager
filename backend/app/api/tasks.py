@@ -1,3 +1,6 @@
+import calendar
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -5,9 +8,24 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.category import Category
-from app.models.task import Task
+from app.models.task import Recurrence, Task
 from app.models.user import User
 from app.schemas.task import TaskCreate, TaskOut, TaskUpdate
+
+
+def _next_deadline(base: datetime, recurrence: Recurrence) -> datetime:
+    if recurrence == Recurrence.daily:
+        return base + timedelta(days=1)
+    if recurrence == Recurrence.weekly:
+        return base + timedelta(weeks=1)
+    # monthly — same day next month, clamped to last day of month
+    month = base.month + 1
+    year = base.year
+    if month > 12:
+        month, year = 1, year + 1
+    day = min(base.day, calendar.monthrange(year, month)[1])
+    return base.replace(year=year, month=month, day=day)
+
 
 
 class ReorderPayload(BaseModel):
@@ -98,11 +116,31 @@ def update_task(
         if not category:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
 
+    becoming_complete = payload.is_completed is True and not task.is_completed
+
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(task, field, value)
 
     db.commit()
     db.refresh(task)
+
+    if becoming_complete and task.recurrence != Recurrence.none:
+        base = task.deadline or datetime.now(timezone.utc)
+        next_dl = _next_deadline(base, task.recurrence)
+        max_pos = db.query(Task.position).filter(Task.owner_id == current_user.id).order_by(Task.position.desc().nulls_last()).scalar()
+        next_task = Task(
+            title=task.title,
+            description=task.description,
+            deadline=next_dl,
+            priority=task.priority,
+            recurrence=task.recurrence,
+            category_id=task.category_id,
+            owner_id=task.owner_id,
+            position=(max_pos + 1) if max_pos is not None else 0,
+        )
+        db.add(next_task)
+        db.commit()
+
     return task
 
 

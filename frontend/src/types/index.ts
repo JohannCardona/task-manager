@@ -13,6 +13,7 @@ export interface Category {
 }
 
 export type Priority = 'low' | 'medium' | 'high'
+export type Recurrence = 'none' | 'daily' | 'weekly' | 'monthly'
 
 export interface Subtask {
   id: number
@@ -29,6 +30,7 @@ export interface Task {
   deadline: string | null
   is_completed: boolean
   priority: Priority
+  recurrence: Recurrence
   owner_id: number
   category_id: number | null
   position: number | null

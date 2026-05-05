@@ -14,6 +14,13 @@ class Priority(str, Enum):
     high = "high"
 
 
+class Recurrence(str, Enum):
+    none = "none"
+    daily = "daily"
+    weekly = "weekly"
+    monthly = "monthly"
+
+
 class Task(Base):
     __tablename__ = "tasks"
 
@@ -23,6 +30,7 @@ class Task(Base):
     deadline: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
     priority: Mapped[Priority] = mapped_column(SAEnum(Priority), default=Priority.medium)
+    recurrence: Mapped[Recurrence] = mapped_column(SAEnum(Recurrence), default=Recurrence.none)
     owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     category_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("categories.id"), nullable=True)
     position: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)

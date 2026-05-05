@@ -15,6 +15,7 @@ export default function TaskModal({ task, categories, onSave, onClose }: Props) 
   const [description, setDescription] = useState(task?.description ?? '')
   const [deadline, setDeadline] = useState(task?.deadline ? task.deadline.slice(0, 16) : '')
   const [priority, setPriority] = useState<TaskPayload['priority']>(task?.priority ?? 'medium')
+  const [recurrence, setRecurrence] = useState<NonNullable<TaskPayload['recurrence']>>(task?.recurrence ?? 'none')
   const [categoryId, setCategoryId] = useState<number | ''>(task?.category_id ?? '')
 
   useEffect(() => {
@@ -30,6 +31,7 @@ export default function TaskModal({ task, categories, onSave, onClose }: Props) 
       description: description || undefined,
       deadline: deadline || undefined,
       priority,
+      recurrence,
       category_id: categoryId !== '' ? categoryId : undefined,
     })
   }
@@ -79,15 +81,31 @@ export default function TaskModal({ task, categories, onSave, onClose }: Props) 
               </select>
             </div>
           </div>
-          <div className={styles.field}>
-            <label htmlFor="task-deadline" className={styles.label}>Deadline</label>
-            <input
-              id="task-deadline"
-              className={styles.input}
-              type="datetime-local"
-              value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-            />
+          <div className={styles.row}>
+            <div className={styles.field}>
+              <label htmlFor="task-deadline" className={styles.label}>Deadline</label>
+              <input
+                id="task-deadline"
+                className={styles.input}
+                type="datetime-local"
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+              />
+            </div>
+            <div className={styles.field}>
+              <label htmlFor="task-recurrence" className={styles.label}>Recurrence</label>
+              <select
+                id="task-recurrence"
+                className={styles.input}
+                value={recurrence}
+                onChange={(e) => setRecurrence(e.target.value as NonNullable<TaskPayload['recurrence']>)}
+              >
+                <option value="none">None</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
           </div>
           <div className={styles.buttons}>
             <button type="button" className={styles.cancel} onClick={onClose}>Cancel</button>

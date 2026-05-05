@@ -6,6 +6,7 @@ export interface TaskPayload {
   description?: string
   deadline?: string
   priority: 'low' | 'medium' | 'high'
+  recurrence?: 'none' | 'daily' | 'weekly' | 'monthly'
   category_id?: number
 }
 

@@ -61,6 +61,15 @@ export default function TasksPage() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
+  async function fetchTasks() {
+    try {
+      const fetched = await tasksApi.getTasks()
+      setTasks(fetched)
+    } catch {
+      setFetchError(true)
+    }
+  }
+
   useEffect(() => {
     Promise.all([tasksApi.getTasks(), categoriesApi.getCategories()])
       .then(([fetchedTasks, fetchedCategories]) => {
@@ -160,8 +169,13 @@ export default function TasksPage() {
 
   async function handleToggle(task: Task) {
     try {
-      const updated = await tasksApi.updateTask(task.id, { is_completed: !task.is_completed })
-      setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+      const completing = !task.is_completed
+      const updated = await tasksApi.updateTask(task.id, { is_completed: completing })
+      if (completing && task.recurrence !== 'none') {
+        await fetchTasks()
+      } else {
+        setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+      }
       addToast(updated.is_completed ? 'Task completed' : 'Task reopened')
     } catch {
       addToast('Failed to update task', 'error')
@@ -303,6 +317,7 @@ export default function TasksPage() {
             <button type="button" className={styles.bulkBtn} onClick={() => handleBulkComplete(false)}>Mark active</button>
             <select
               className={styles.bulkSelect}
+              title="Move to category"
               value=""
               onChange={(e) => handleBulkCategory(e.target.value === '' ? null : Number(e.target.value))}
             >
