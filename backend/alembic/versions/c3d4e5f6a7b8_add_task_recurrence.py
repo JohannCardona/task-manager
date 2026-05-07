@@ -17,13 +17,11 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column('tasks', sa.Column(
-        'recurrence',
-        sa.Enum('none', 'daily', 'weekly', 'monthly', name='recurrence'),
-        nullable=False,
-        server_default='none',
-    ))
+    recurrence_type = sa.Enum('none', 'daily', 'weekly', 'monthly', name='recurrence')
+    recurrence_type.create(op.get_bind(), checkfirst=True)
+    op.add_column('tasks', sa.Column('recurrence', recurrence_type, nullable=False, server_default='none'))
 
 
 def downgrade() -> None:
     op.drop_column('tasks', 'recurrence')
+    sa.Enum(name='recurrence').drop(op.get_bind(), checkfirst=True)
