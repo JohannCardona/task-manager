@@ -21,8 +21,15 @@ export default function RegisterPage() {
     try {
       await register(email, username, password)
       navigate('/login')
-    } catch {
-      setError('Registration failed. Email or username may already be taken.')
+    } catch (err) {
+      const detail = (err as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail
+      if (typeof detail === 'string') {
+        setError(detail)
+      } else if (Array.isArray(detail)) {
+        setError(detail.map((d: { msg?: string }) => d.msg ?? '').join(', '))
+      } else {
+        setError('Registration failed. Email or username may already be taken.')
+      }
     } finally {
       setLoading(false)
     }
@@ -66,6 +73,7 @@ export default function RegisterPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              minLength={8}
             />
           </div>
           {error && <p className={styles.error}>{error}</p>}
