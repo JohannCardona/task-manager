@@ -7,6 +7,10 @@ from alembic import context
 # Alembic Config object
 config = context.config
 
+# Override sqlalchemy.url with DATABASE_URL env var if set
+from app.core.config import settings  # noqa: E402
+config.set_main_option("sqlalchemy.url", settings.database_url)
+
 # Interpret the config file for Python logging
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
