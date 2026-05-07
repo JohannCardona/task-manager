@@ -26,7 +26,7 @@ export default function RegisterPage() {
       if (typeof detail === 'string') {
         setError(detail)
       } else if (Array.isArray(detail)) {
-        setError(detail.map((d: { msg?: string }) => d.msg ?? '').join(', '))
+        setError(detail.map((d: { msg?: string }) => (d.msg ?? '').replace(/^Value error, /i, '')).join(', '))
       } else {
         setError('Registration failed. Email or username may already be taken.')
       }
