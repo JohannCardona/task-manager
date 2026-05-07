@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
+    frontend_url: str = "http://localhost:5173"
+
     # SMTP email settings
     smtp_host: str = "smtp.gmail.com"
     smtp_port: int = 587
