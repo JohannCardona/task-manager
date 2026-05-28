@@ -3,6 +3,7 @@ export interface User {
   email: string
   username: string
   is_active: boolean
+  timezone: string
 }
 
 export interface Category {

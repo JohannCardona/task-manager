@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.deps import get_current_user
 from app.core.security import create_access_token, create_refresh_token, decode_refresh_token, hash_password, verify_password
 from app.models.user import User
-from app.schemas.user import RefreshRequest, Token, UserLogin, UserOut, UserRegister
+from app.schemas.user import RefreshRequest, Token, UserLogin, UserOut, UserRegister, UserUpdate
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -20,6 +21,7 @@ def register(payload: UserRegister, db: Session = Depends(get_db)) -> User:
         email=payload.email,
         username=payload.username,
         hashed_password=hash_password(payload.password),
+        timezone=payload.timezone,
     )
     db.add(user)
     db.commit()
@@ -45,6 +47,19 @@ def login(payload: UserLogin, db: Session = Depends(get_db)) -> Token:
         access_token=create_access_token(subject=user.username),
         refresh_token=create_refresh_token(subject=user.username),
     )
+
+
+@router.get("/me", response_model=UserOut)
+def get_me(current_user: User = Depends(get_current_user)) -> User:
+    return current_user
+
+
+@router.patch("/me", response_model=UserOut)
+def update_me(payload: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> User:
+    current_user.timezone = payload.timezone
+    db.commit()
+    db.refresh(current_user)
+    return current_user
 
 
 @router.post("/refresh", response_model=Token)

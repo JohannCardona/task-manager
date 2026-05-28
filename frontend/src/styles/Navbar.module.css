@@ -21,6 +21,21 @@
 }
 
 
+.tzSelect {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.375rem 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text);
+  cursor: pointer;
+  max-width: 200px;
+}
+
+.tzSelect:disabled {
+  opacity: 0.5;
+}
+
 .logout {
   background: none;
   border: 1px solid var(--border);

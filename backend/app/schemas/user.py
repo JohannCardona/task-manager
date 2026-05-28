@@ -5,6 +5,7 @@ class UserRegister(BaseModel):
     email: EmailStr
     username: str
     password: str
+    timezone: str = "UTC"
 
     @field_validator("password")
     @classmethod
@@ -19,11 +20,16 @@ class UserLogin(BaseModel):
     password: str
 
 
+class UserUpdate(BaseModel):
+    timezone: str
+
+
 class UserOut(BaseModel):
     id: int
     email: str
     username: str
     is_active: bool
+    timezone: str
 
     model_config = {"from_attributes": True}
 

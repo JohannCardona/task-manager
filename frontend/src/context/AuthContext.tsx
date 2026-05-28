@@ -23,7 +23,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const register = useCallback(async (email: string, username: string, password: string) => {
-    await authApi.register(email, username, password)
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    await authApi.register(email, username, password, timezone)
   }, [])
 
   const logout = useCallback(() => {
