@@ -345,7 +345,30 @@ export default function TasksPage() {
         ) : fetchError ? (
           <p className={styles.error}>Failed to load tasks. Please refresh the page.</p>
         ) : displayed.length === 0 ? (
-          <p className={styles.empty}>{search.trim() ? 'No tasks match your search.' : 'No tasks here. Create one!'}</p>
+          <div className={styles.emptyState}>
+            {search.trim() ? (
+              <>
+                <span className={styles.emptyIcon}>🔍</span>
+                <p className={styles.emptyTitle}>No results for "{search.trim()}"</p>
+                <p className={styles.emptySubtitle}>Try a different search term.</p>
+              </>
+            ) : filter !== 'all' ? (
+              <>
+                <span className={styles.emptyIcon}>{filter === 'completed' ? '✓' : '○'}</span>
+                <p className={styles.emptyTitle}>No {filter} tasks</p>
+                <p className={styles.emptySubtitle}>
+                  {filter === 'completed' ? 'Complete a task to see it here.' : 'All your tasks are completed!'}
+                </p>
+              </>
+            ) : (
+              <>
+                <span className={styles.emptyIcon}>📋</span>
+                <p className={styles.emptyTitle}>No tasks yet</p>
+                <p className={styles.emptySubtitle}>Create your first task to get started.</p>
+                <button type="button" className={styles.newBtn} onClick={() => setShowTaskModal(true)}>+ New task</button>
+              </>
+            )}
+          </div>
         ) : isDraggable ? (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={displayed.map((t) => t.id)} strategy={verticalListSortingStrategy}>
