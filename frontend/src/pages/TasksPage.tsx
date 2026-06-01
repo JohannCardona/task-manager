@@ -52,7 +52,10 @@ export default function TasksPage() {
   const [fetchError, setFetchError] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
+  const [page, setPage] = useState(1)
   const { addToast } = useToast()
+
+  const PAGE_SIZE = 10
 
   const isDraggable = sort === 'created' && filter === 'all' && !search.trim()
 
@@ -230,11 +233,17 @@ export default function TasksPage() {
     return sortTasks(filtered, sort)
   }, [tasks, filter, sort, search])
 
-  const allSelected = displayed.length > 0 && selectedIds.size === displayed.length
+  const totalPages = Math.max(1, Math.ceil(displayed.length / PAGE_SIZE))
+  const safePage = Math.min(page, totalPages)
+  const paginated = displayed.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+
+  useEffect(() => { setPage(1) }, [search, filter, sort])
+
+  const allSelected = paginated.length > 0 && paginated.every((t) => selectedIds.has(t.id))
 
   const list = (
     <div className={styles.list}>
-      {displayed.map((task) => (
+      {paginated.map((task) => (
         <TaskCard
           key={task.id}
           task={task}
@@ -371,11 +380,33 @@ export default function TasksPage() {
           </div>
         ) : isDraggable ? (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={displayed.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+            <SortableContext items={paginated.map((t) => t.id)} strategy={verticalListSortingStrategy}>
               {list}
             </SortableContext>
           </DndContext>
         ) : list}
+
+        {totalPages > 1 && (
+          <div className={styles.pagination}>
+            <button
+              type="button"
+              className={styles.pageBtn}
+              onClick={() => setPage((p) => p - 1)}
+              disabled={safePage === 1}
+            >
+              ← Prev
+            </button>
+            <span className={styles.pageInfo}>Page {safePage} of {totalPages}</span>
+            <button
+              type="button"
+              className={styles.pageBtn}
+              onClick={() => setPage((p) => p + 1)}
+              disabled={safePage === totalPages}
+            >
+              Next →
+            </button>
+          </div>
+        )}
       </main>
 
       {showTaskModal && (
