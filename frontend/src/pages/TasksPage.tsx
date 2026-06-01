@@ -107,51 +107,69 @@ export default function TasksPage() {
 
   async function handleBulkComplete(completed: boolean) {
     const ids = [...selectedIds]
+    const prev = tasks
+    setTasks((ts) => ts.map((t) => ids.includes(t.id) ? { ...t, is_completed: completed } : t))
+    addToast(`${ids.length} task${ids.length > 1 ? 's' : ''} ${completed ? 'completed' : 'reopened'}`)
+    clearSelection()
     try {
-      const updated = await Promise.all(ids.map((id) => tasksApi.updateTask(id, { is_completed: completed })))
-      setTasks((prev) => prev.map((t) => updated.find((u) => u.id === t.id) ?? t))
-      addToast(`${ids.length} task${ids.length > 1 ? 's' : ''} ${completed ? 'completed' : 'reopened'}`)
-      clearSelection()
+      await Promise.all(ids.map((id) => tasksApi.updateTask(id, { is_completed: completed })))
     } catch {
+      setTasks(prev)
       addToast('Failed to update tasks', 'error')
     }
   }
 
   async function handleBulkCategory(categoryId: number | null) {
     const ids = [...selectedIds]
+    const prev = tasks
+    setTasks((ts) => ts.map((t) => ids.includes(t.id) ? { ...t, category_id: categoryId } : t))
+    addToast(`Category updated for ${ids.length} task${ids.length > 1 ? 's' : ''}`)
+    clearSelection()
     try {
-      const updated = await Promise.all(ids.map((id) => tasksApi.updateTask(id, { category_id: categoryId ?? undefined })))
-      setTasks((prev) => prev.map((t) => updated.find((u) => u.id === t.id) ?? t))
-      addToast(`Category updated for ${ids.length} task${ids.length > 1 ? 's' : ''}`)
-      clearSelection()
+      await Promise.all(ids.map((id) => tasksApi.updateTask(id, { category_id: categoryId ?? undefined })))
     } catch {
+      setTasks(prev)
       addToast('Failed to update category', 'error')
     }
   }
 
   async function handleBulkDelete() {
     const ids = [...selectedIds]
+    const prev = tasks
+    setTasks((ts) => ts.filter((t) => !selectedIds.has(t.id)))
+    addToast(`${ids.length} task${ids.length > 1 ? 's' : ''} deleted`)
+    clearSelection()
     try {
       await Promise.all(ids.map((id) => tasksApi.deleteTask(id)))
-      setTasks((prev) => prev.filter((t) => !selectedIds.has(t.id)))
-      addToast(`${ids.length} task${ids.length > 1 ? 's' : ''} deleted`)
-      clearSelection()
     } catch {
+      setTasks(prev)
       addToast('Failed to delete tasks', 'error')
     }
   }
 
   async function handleSaveTask(data: TaskPayload) {
-    try {
-      if (editing) {
+    if (editing) {
+      const prev = tasks
+      const optimistic = { ...editing, ...data, category_id: data.category_id ?? null }
+      setTasks((ts) => ts.map((t) => (t.id === editing.id ? optimistic : t)))
+      setShowTaskModal(false)
+      setEditing(undefined)
+      try {
         const updated = await tasksApi.updateTask(editing.id, data)
-        setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+        setTasks((ts) => ts.map((t) => (t.id === updated.id ? updated : t)))
         addToast('Task updated')
-      } else {
-        const created = await tasksApi.createTask(data)
-        setTasks((prev) => [...prev, created])
-        addToast('Task created')
+      } catch {
+        setTasks(prev)
+        setShowTaskModal(true)
+        setEditing(editing)
+        addToast('Failed to save task', 'error')
       }
+      return
+    }
+    try {
+      const created = await tasksApi.createTask(data)
+      setTasks((prev) => [...prev, created])
+      addToast('Task created')
       setShowTaskModal(false)
       setEditing(undefined)
     } catch {
@@ -171,26 +189,33 @@ export default function TasksPage() {
   }
 
   async function handleToggle(task: Task) {
+    const completing = !task.is_completed
+    const prev = tasks
+    if (!(completing && task.recurrence !== 'none')) {
+      setTasks((ts) => ts.map((t) => (t.id === task.id ? { ...t, is_completed: completing } : t)))
+    }
     try {
-      const completing = !task.is_completed
       const updated = await tasksApi.updateTask(task.id, { is_completed: completing })
       if (completing && task.recurrence !== 'none') {
         await fetchTasks()
       } else {
-        setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+        setTasks((ts) => ts.map((t) => (t.id === updated.id ? updated : t)))
       }
-      addToast(updated.is_completed ? 'Task completed' : 'Task reopened')
+      addToast(completing ? 'Task completed' : 'Task reopened')
     } catch {
+      setTasks(prev)
       addToast('Failed to update task', 'error')
     }
   }
 
   async function handleDelete(id: number) {
+    const prev = tasks
+    setTasks((ts) => ts.filter((t) => t.id !== id))
+    addToast('Task deleted')
     try {
       await tasksApi.deleteTask(id)
-      setTasks((prev) => prev.filter((t) => t.id !== id))
-      addToast('Task deleted', 'error')
     } catch {
+      setTasks(prev)
       addToast('Failed to delete task', 'error')
     }
   }
