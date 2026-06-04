@@ -12,3 +12,9 @@ export const getMe = (): Promise<User> =>
 
 export const updateMe = (timezone: string): Promise<User> =>
   client.patch<User>('/auth/me', { timezone }).then((r) => r.data)
+
+export const forgotPassword = (email: string): Promise<void> =>
+  client.post('/auth/forgot-password', { email }).then(() => undefined)
+
+export const resetPassword = (token: string, password: string): Promise<void> =>
+  client.post('/auth/reset-password', { token, password }).then(() => undefined)

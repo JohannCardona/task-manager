@@ -5,6 +5,31 @@ from email.mime.text import MIMEText
 from app.core.config import settings
 
 
+def _send(to_email: str, subject: str, body: str) -> None:
+    msg = MIMEMultipart()
+    msg["From"] = settings.smtp_from or settings.smtp_username
+    msg["To"] = to_email
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
+    with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
+        server.ehlo()
+        server.starttls()
+        server.login(settings.smtp_username, settings.smtp_password)
+        server.sendmail(msg["From"], to_email, msg.as_string())
+
+
+def send_password_reset(to_email: str, reset_url: str) -> None:
+    if not settings.smtp_username:
+        return
+    body = (
+        f"You requested a password reset for your Task Manager account.\n\n"
+        f"Click the link below to set a new password (valid for 1 hour):\n\n"
+        f"{reset_url}\n\n"
+        f"If you did not request this, you can ignore this email."
+    )
+    _send(to_email, "Task Manager — Password Reset", body)
+
+
 def send_deadline_reminder(to_email: str, username: str, overdue: list[str], due_today: list[str]) -> None:
     if not settings.email_notifications_enabled or not settings.smtp_username:
         return
@@ -27,15 +52,4 @@ def send_deadline_reminder(to_email: str, username: str, overdue: list[str], due
 
     lines.append("Log in to your task manager to take action.")
     body = "\n".join(lines)
-
-    msg = MIMEMultipart()
-    msg["From"] = settings.smtp_from or settings.smtp_username
-    msg["To"] = to_email
-    msg["Subject"] = subject
-    msg.attach(MIMEText(body, "plain"))
-
-    with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as server:
-        server.ehlo()
-        server.starttls()
-        server.login(settings.smtp_username, settings.smtp_password)
-        server.sendmail(msg["From"], to_email, msg.as_string())
+    _send(to_email, subject, body)
