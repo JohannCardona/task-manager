@@ -88,16 +88,13 @@ def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db
 @router.post("/reset-password", status_code=status.HTTP_204_NO_CONTENT)
 def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)) -> None:
     email = decode_reset_token(payload.token)
-    logger.info("Password reset attempt for email: %s", email)
     if not email:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset link")
     user = db.query(User).filter(User.email == email).first()
     if not user or not user.is_active:
-        logger.warning("Reset failed — user not found or inactive for email: %s", email)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset link")
     user.hashed_password = hash_password(payload.password)
     db.commit()
-    logger.info("Password reset successful for user: %s", user.username)
 
 
 @router.post("/refresh", response_model=Token)
