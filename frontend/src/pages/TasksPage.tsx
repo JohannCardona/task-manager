@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import type { Task, Category } from '../types'
@@ -54,6 +55,7 @@ export default function TasksPage() {
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
   const [page, setPage] = useState(1)
   const { addToast } = useToast()
+  const navigate = useNavigate()
 
   const PAGE_SIZE = 10
 
@@ -291,6 +293,10 @@ export default function TasksPage() {
         <div className={styles.header}>
           <h1 className={styles.title}>My Tasks</h1>
           <div className={styles.headerActions}>
+            <div className={styles.viewToggle}>
+              <button type="button" className={`${styles.viewBtn} ${styles.viewBtnActive}`}>List</button>
+              <button type="button" className={styles.viewBtn} onClick={() => navigate('/calendar')}>Calendar</button>
+            </div>
             <button type="button" className={styles.secondaryBtn} onClick={() => setShowCategoryModal(true)}>+ New category</button>
             <button type="button" className={styles.newBtn} onClick={() => setShowTaskModal(true)}>+ New task</button>
           </div>
