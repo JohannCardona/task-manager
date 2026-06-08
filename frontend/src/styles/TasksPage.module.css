@@ -63,6 +63,29 @@
   background: var(--accent-hover);
 }
 
+.exportWrapper {
+  display: flex;
+  gap: 0.375rem;
+  margin-left: auto;
+}
+
+.exportBtn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.exportBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .viewToggle {
   display: flex;
   gap: 0.375rem;

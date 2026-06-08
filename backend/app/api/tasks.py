@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -87,7 +88,7 @@ def create_task(
         if not category:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
 
-    max_pos = db.query(Task.position).filter(Task.owner_id == current_user.id).order_by(Task.position.desc().nulls_last()).scalar()
+    max_pos = db.query(func.max(Task.position)).filter(Task.owner_id == current_user.id).scalar()
     next_pos = (max_pos + 1) if max_pos is not None else 0
 
     task = Task(**payload.model_dump(), owner_id=current_user.id, position=next_pos)
@@ -127,7 +128,7 @@ def update_task(
     if becoming_complete and task.recurrence != Recurrence.none:
         base = task.deadline or datetime.now(timezone.utc)
         next_dl = _next_deadline(base, task.recurrence)
-        max_pos = db.query(Task.position).filter(Task.owner_id == current_user.id).order_by(Task.position.desc().nulls_last()).scalar()
+        max_pos = db.query(func.max(Task.position)).filter(Task.owner_id == current_user.id).scalar()
         next_task = Task(
             title=task.title,
             description=task.description,

@@ -11,6 +11,7 @@ import TaskModal from '../components/TaskModal'
 import CategoryModal from '../components/CategoryModal'
 import type { TaskPayload } from '../api/tasks'
 import { useToast } from '../context/ToastContext'
+import { exportCSV, exportPDF } from '../utils/export'
 import styles from '../styles/TasksPage.module.css'
 
 type SortKey = 'created' | 'deadline' | 'priority' | 'status'
@@ -344,6 +345,15 @@ export default function TasksPage() {
               <option value="priority">Priority</option>
               <option value="status">Status</option>
             </select>
+          </div>
+
+          <div className={styles.exportWrapper}>
+            <button type="button" className={styles.exportBtn} onClick={() => exportCSV(displayed, categories)}>
+              ↓ CSV
+            </button>
+            <button type="button" className={styles.exportBtn} onClick={() => exportPDF(displayed, categories)}>
+              ↓ PDF
+            </button>
           </div>
         </div>
 
