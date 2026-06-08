@@ -104,3 +104,13 @@
 .save:hover {
   background: var(--accent-hover);
 }
+
+@media (max-width: 480px) {
+  .modal {
+    padding: 1.25rem;
+  }
+
+  .row {
+    grid-template-columns: 1fr;
+  }
+}

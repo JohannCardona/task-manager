@@ -168,3 +168,45 @@
   .medium { border-left-color: #fde047; }
   .high { border-left-color: #fca5a5; }
 }
+
+@media (max-width: 480px) {
+  .main {
+    padding: 1rem 0.5rem;
+    gap: 1rem;
+  }
+
+  .title {
+    font-size: 1.1rem;
+    min-width: 0;
+  }
+
+  .nav {
+    gap: 0.5rem;
+  }
+
+  .dayHeader {
+    font-size: 0.65rem;
+    padding: 0.375rem 0.125rem;
+  }
+
+  .cell {
+    min-height: 60px;
+    padding: 0.25rem;
+  }
+
+  .dateNum {
+    font-size: 0.7rem;
+    width: 20px;
+    height: 20px;
+  }
+
+  .cellToday .dateNum {
+    width: 20px;
+    height: 20px;
+  }
+
+  .taskChip {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.25rem;
+  }
+}
