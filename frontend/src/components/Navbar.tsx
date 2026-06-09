@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import * as authApi from '../api/auth'
 import ThemeToggle from './ThemeToggle'
@@ -19,7 +20,7 @@ export default function Navbar() {
     setTimezone(tz)
     setSaving(true)
     try {
-      await authApi.updateMe(tz)
+      await authApi.updateMe({ timezone: tz })
     } finally {
       setSaving(false)
     }
@@ -41,6 +42,7 @@ export default function Navbar() {
           ))}
         </select>
         <ThemeToggle />
+        <Link className={styles.settingsLink} to="/settings">Settings</Link>
         <button type="button" className={styles.logout} onClick={logout}>Sign out</button>
       </div>
     </nav>

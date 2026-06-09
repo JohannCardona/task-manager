@@ -10,8 +10,14 @@ export const login = (username: string, password: string): Promise<Token> =>
 export const getMe = (): Promise<User> =>
   client.get<User>('/auth/me').then((r) => r.data)
 
-export const updateMe = (timezone: string): Promise<User> =>
-  client.patch<User>('/auth/me', { timezone }).then((r) => r.data)
+export const updateMe = (data: Partial<Pick<User, 'timezone' | 'username' | 'email'>>): Promise<User> =>
+  client.patch<User>('/auth/me', data).then((r) => r.data)
+
+export const changePassword = (current_password: string, new_password: string): Promise<void> =>
+  client.post('/auth/me/password', { current_password, new_password }).then(() => undefined)
+
+export const deleteAccount = (password: string): Promise<void> =>
+  client.post('/auth/me/delete', { password }).then(() => undefined)
 
 export const forgotPassword = (email: string): Promise<void> =>
   client.post('/auth/forgot-password', { email }).then(() => undefined)

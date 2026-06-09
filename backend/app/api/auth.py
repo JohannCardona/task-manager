@@ -11,7 +11,7 @@ from app.core.email import send_password_reset
 from app.core.security import create_access_token, create_refresh_token, create_reset_token, decode_refresh_token, decode_reset_token, hash_password, verify_password
 from app.core.config import settings
 from app.models.user import User
-from app.schemas.user import ForgotPasswordRequest, RefreshRequest, ResetPasswordRequest, Token, UserLogin, UserOut, UserRegister, UserUpdate
+from app.schemas.user import AccountDelete, ForgotPasswordRequest, PasswordChange, RefreshRequest, ResetPasswordRequest, Token, UserLogin, UserOut, UserRegister, UserUpdate
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -66,10 +66,35 @@ def get_me(current_user: User = Depends(get_current_user)) -> User:
 
 @router.patch("/me", response_model=UserOut)
 def update_me(payload: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> User:
-    current_user.timezone = payload.timezone
+    if payload.timezone is not None:
+        current_user.timezone = payload.timezone
+    if payload.username is not None and payload.username != current_user.username:
+        if db.query(User).filter(User.username == payload.username, User.id != current_user.id).first():
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken")
+        current_user.username = payload.username
+    if payload.email is not None and payload.email != current_user.email:
+        if db.query(User).filter(User.email == payload.email, User.id != current_user.id).first():
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+        current_user.email = payload.email
     db.commit()
     db.refresh(current_user)
     return current_user
+
+
+@router.post("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(payload: PasswordChange, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> None:
+    if not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
+    current_user.hashed_password = hash_password(payload.new_password)
+    db.commit()
+
+
+@router.post("/me/delete", status_code=status.HTTP_204_NO_CONTENT)
+def delete_account(payload: AccountDelete, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> None:
+    if not verify_password(payload.password, current_user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect password")
+    db.delete(current_user)
+    db.commit()
 
 
 @router.post("/forgot-password", status_code=status.HTTP_204_NO_CONTENT)

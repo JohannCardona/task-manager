@@ -36,6 +36,21 @@
   opacity: 0.5;
 }
 
+.settingsLink {
+  font-size: 0.875rem;
+  color: var(--text);
+  text-decoration: none;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.settingsLink:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .logout {
   background: none;
   border: 1px solid var(--border);
