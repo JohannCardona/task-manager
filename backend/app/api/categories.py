@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.category import Category
+from app.models.task import Task
 from app.models.user import User
 from app.schemas.category import CategoryCreate, CategoryOut, CategoryUpdate
 
@@ -66,5 +67,6 @@ def delete_category(
     if not category:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")
 
+    db.query(Task).filter(Task.category_id == category_id, Task.owner_id == current_user.id).update({"category_id": None})
     db.delete(category)
     db.commit()

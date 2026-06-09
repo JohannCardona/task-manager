@@ -9,6 +9,7 @@ import Navbar from '../components/Navbar'
 import TaskCard from '../components/TaskCard'
 import TaskModal from '../components/TaskModal'
 import CategoryModal from '../components/CategoryModal'
+import CategoryManagerModal from '../components/CategoryManagerModal'
 import type { TaskPayload } from '../api/tasks'
 import { useToast } from '../context/ToastContext'
 import { exportCSV, exportPDF } from '../utils/export'
@@ -46,7 +47,9 @@ export default function TasksPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [showTaskModal, setShowTaskModal] = useState(false)
   const [showCategoryModal, setShowCategoryModal] = useState(false)
+  const [showCategoryManager, setShowCategoryManager] = useState(false)
   const [editing, setEditing] = useState<Task | undefined>()
+  const [editingCategory, setEditingCategory] = useState<Category | undefined>()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
   const [sort, setSort] = useState<SortKey>('created')
@@ -180,14 +183,48 @@ export default function TasksPage() {
     }
   }
 
+  function openCategoryModalFromManager(cat?: Category) {
+    setShowCategoryManager(false)
+    setEditingCategory(cat)
+    setShowCategoryModal(true)
+  }
+
+  function closeCategoryModal() {
+    setShowCategoryModal(false)
+    setEditingCategory(undefined)
+    setShowCategoryManager(true)
+  }
+
   async function handleSaveCategory(name: string, color: string) {
+    if (editingCategory) {
+      try {
+        const updated = await categoriesApi.updateCategory(editingCategory.id, name, color)
+        setCategories((prev) => prev.map((c) => c.id === updated.id ? updated : c))
+        closeCategoryModal()
+        addToast('Category updated')
+      } catch {
+        addToast('Failed to update category', 'error')
+      }
+      return
+    }
     try {
       const created = await categoriesApi.createCategory(name, color)
       setCategories((prev) => [...prev, created])
-      setShowCategoryModal(false)
+      closeCategoryModal()
       addToast('Category created')
     } catch {
       addToast('Failed to create category', 'error')
+    }
+  }
+
+  async function handleDeleteCategory(id: number) {
+    try {
+      await categoriesApi.deleteCategory(id)
+      setCategories((prev) => prev.filter((c) => c.id !== id))
+      setTasks((prev) => prev.map((t) => t.category_id === id ? { ...t, category_id: null } : t))
+      addToast('Category deleted')
+    } catch {
+      addToast('Failed to delete category', 'error')
     }
   }
 
@@ -298,7 +335,7 @@ export default function TasksPage() {
               <button type="button" className={`${styles.viewBtn} ${styles.viewBtnActive}`}>List</button>
               <button type="button" className={styles.viewBtn} onClick={() => navigate('/calendar')}>Calendar</button>
             </div>
-            <button type="button" className={styles.secondaryBtn} onClick={() => setShowCategoryModal(true)}>+ New category</button>
+            <button type="button" className={styles.secondaryBtn} onClick={() => setShowCategoryManager(true)}>Categories</button>
             <button type="button" className={styles.newBtn} onClick={() => setShowTaskModal(true)}>+ New task</button>
           </div>
         </div>
@@ -459,10 +496,21 @@ export default function TasksPage() {
         />
       )}
 
+      {showCategoryManager && (
+        <CategoryManagerModal
+          categories={categories}
+          onEdit={openCategoryModalFromManager}
+          onDelete={handleDeleteCategory}
+          onNew={() => openCategoryModalFromManager(undefined)}
+          onClose={() => setShowCategoryManager(false)}
+        />
+      )}
+
       {showCategoryModal && (
         <CategoryModal
+          category={editingCategory}
           onSave={handleSaveCategory}
-          onClose={() => setShowCategoryModal(false)}
+          onClose={closeCategoryModal}
         />
       )}
     </div>

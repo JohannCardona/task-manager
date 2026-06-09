@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import type { Category } from '../types'
 import styles from '../styles/CategoryModal.module.css'
 
 const PRESET_COLORS = [
@@ -7,13 +8,14 @@ const PRESET_COLORS = [
 ]
 
 interface Props {
+  category?: Category
   onSave: (name: string, color: string) => void
   onClose: () => void
 }
 
-export default function CategoryModal({ onSave, onClose }: Props) {
-  const [name, setName] = useState('')
-  const [color, setColor] = useState(PRESET_COLORS[0])
+export default function CategoryModal({ category, onSave, onClose }: Props) {
+  const [name, setName] = useState(category?.name ?? '')
+  const [color, setColor] = useState(category?.color ?? PRESET_COLORS[0])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -29,7 +31,7 @@ export default function CategoryModal({ onSave, onClose }: Props) {
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <h2 className={styles.heading}>New category</h2>
+        <h2 className={styles.heading}>{category ? 'Edit category' : 'New category'}</h2>
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.field}>
             <label htmlFor="category-name" className={styles.label}>Name</label>
@@ -64,7 +66,7 @@ export default function CategoryModal({ onSave, onClose }: Props) {
           </div>
           <div className={styles.buttons}>
             <button type="button" className={styles.cancel} onClick={onClose}>Cancel</button>
-            <button type="submit" className={styles.save}>Create</button>
+            <button type="submit" className={styles.save}>{category ? 'Save' : 'Create'}</button>
           </div>
         </form>
       </div>
