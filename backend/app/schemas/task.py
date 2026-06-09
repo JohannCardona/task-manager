@@ -9,6 +9,7 @@ from app.schemas.subtask import SubtaskOut
 class TaskCreate(BaseModel):
     title: str
     description: str | None = None
+    notes: str | None = None
     deadline: datetime | None = None
     priority: Priority = Priority.medium
     recurrence: Recurrence = Recurrence.none
@@ -18,6 +19,7 @@ class TaskCreate(BaseModel):
 class TaskUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
+    notes: str | None = None
     deadline: datetime | None = None
     is_completed: bool | None = None
     priority: Priority | None = None
@@ -29,6 +31,7 @@ class TaskOut(BaseModel):
     id: int
     title: str
     description: str | None
+    notes: str | None
     deadline: datetime | None
     is_completed: bool
     priority: Priority

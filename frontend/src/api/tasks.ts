@@ -4,6 +4,7 @@ import type { Task } from '../types'
 export interface TaskPayload {
   title: string
   description?: string
+  notes?: string
   deadline?: string
   priority: 'low' | 'medium' | 'high'
   recurrence?: 'none' | 'daily' | 'weekly' | 'monthly'

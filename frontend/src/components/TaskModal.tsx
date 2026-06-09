@@ -17,6 +17,7 @@ export default function TaskModal({ task, categories, onSave, onClose }: Props) 
   const [priority, setPriority] = useState<TaskPayload['priority']>(task?.priority ?? 'medium')
   const [recurrence, setRecurrence] = useState<NonNullable<TaskPayload['recurrence']>>(task?.recurrence ?? 'none')
   const [categoryId, setCategoryId] = useState<number | ''>(task?.category_id ?? '')
+  const [notes, setNotes] = useState(task?.notes ?? '')
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -29,6 +30,7 @@ export default function TaskModal({ task, categories, onSave, onClose }: Props) 
     onSave({
       title,
       description: description || undefined,
+      notes: notes || undefined,
       deadline: deadline || undefined,
       priority,
       recurrence,
@@ -60,6 +62,17 @@ export default function TaskModal({ task, categories, onSave, onClose }: Props) 
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+          <div className={styles.field}>
+            <label htmlFor="task-notes" className={styles.label}>Notes</label>
+            <textarea
+              id="task-notes"
+              className={styles.input}
+              rows={4}
+              placeholder="Links, steps, extra context…"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
             />
           </div>
           <div className={styles.row}>

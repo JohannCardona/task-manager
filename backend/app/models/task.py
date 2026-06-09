@@ -27,6 +27,7 @@ class Task(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     deadline: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
     priority: Mapped[Priority] = mapped_column(SAEnum(Priority), default=Priority.medium)

@@ -176,6 +176,13 @@
   color: var(--text);
 }
 
+.notesIndicator {
+  font-size: 0.75rem;
+  color: var(--text);
+  opacity: 0.6;
+  cursor: default;
+}
+
 .subtasks {
   display: flex;
   flex-direction: column;

@@ -28,6 +28,7 @@ export interface Task {
   id: number
   title: string
   description: string | null
+  notes: string | null
   deadline: string | null
   is_completed: boolean
   priority: Priority

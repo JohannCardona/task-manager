@@ -153,6 +153,9 @@ export default function TaskCard({ task, categories, sortable = false, isSelecte
         {subtasks.length > 0 && (
           <span className={styles.subtaskCount}>{doneCount}/{subtasks.length} subtasks</span>
         )}
+        {task.notes && (
+          <span className={styles.notesIndicator} title={task.notes}>Notes</span>
+        )}
       </div>
 
       <div className={styles.subtasks}>
