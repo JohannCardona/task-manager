@@ -52,6 +52,8 @@ export default function TasksPage() {
   const [editingCategory, setEditingCategory] = useState<Category | undefined>()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
+  const [filterPriority, setFilterPriority] = useState<'all' | 'low' | 'medium' | 'high'>('all')
+  const [filterCategory, setFilterCategory] = useState<number | 'all' | 'none'>('all')
   const [sort, setSort] = useState<SortKey>('created')
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState(false)
@@ -293,16 +295,19 @@ export default function TasksPage() {
       if (filter === 'active' && t.is_completed) return false
       if (filter === 'completed' && !t.is_completed) return false
       if (q && !t.title.toLowerCase().includes(q) && !(t.description ?? '').toLowerCase().includes(q)) return false
+      if (filterPriority !== 'all' && t.priority !== filterPriority) return false
+      if (filterCategory === 'none' && t.category_id !== null) return false
+      if (typeof filterCategory === 'number' && t.category_id !== filterCategory) return false
       return true
     })
     return sortTasks(filtered, sort)
-  }, [tasks, filter, sort, search])
+  }, [tasks, filter, sort, search, filterPriority, filterCategory])
 
   const totalPages = Math.max(1, Math.ceil(displayed.length / PAGE_SIZE))
   const safePage = Math.min(page, totalPages)
   const paginated = displayed.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
-  useEffect(() => { setPage(1) }, [search, filter, sort])
+  useEffect(() => { setPage(1) }, [search, filter, sort, filterPriority, filterCategory])
 
   const allSelected = paginated.length > 0 && paginated.every((t) => selectedIds.has(t.id))
 
@@ -367,6 +372,38 @@ export default function TasksPage() {
                 {f.charAt(0).toUpperCase() + f.slice(1)}
               </button>
             ))}
+          </div>
+
+          <div className={styles.sortWrapper}>
+            <select
+              className={styles.sortSelect}
+              value={filterPriority}
+              onChange={(e) => setFilterPriority(e.target.value as typeof filterPriority)}
+              aria-label="Filter by priority"
+            >
+              <option value="all">All priorities</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+
+          <div className={styles.sortWrapper}>
+            <select
+              className={styles.sortSelect}
+              value={filterCategory}
+              onChange={(e) => {
+                const v = e.target.value
+                setFilterCategory(v === 'all' ? 'all' : v === 'none' ? 'none' : Number(v))
+              }}
+              aria-label="Filter by category"
+            >
+              <option value="all">All categories</option>
+              <option value="none">Uncategorized</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
           </div>
 
           <div className={styles.sortWrapper}>
