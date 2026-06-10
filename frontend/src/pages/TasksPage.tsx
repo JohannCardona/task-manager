@@ -12,6 +12,7 @@ import CategoryModal from '../components/CategoryModal'
 import CategoryManagerModal from '../components/CategoryManagerModal'
 import type { TaskPayload } from '../api/tasks'
 import { useToast } from '../context/ToastContext'
+import { useNotifications } from '../context/NotificationContext'
 import { exportCSV, exportPDF } from '../utils/export'
 import styles from '../styles/TasksPage.module.css'
 
@@ -61,6 +62,7 @@ export default function TasksPage() {
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
   const [page, setPage] = useState(1)
   const { addToast } = useToast()
+  const { setDeadlineCount } = useNotifications()
   const navigate = useNavigate()
 
   const PAGE_SIZE = 10
@@ -90,6 +92,23 @@ export default function TasksPage() {
       .catch(() => setFetchError(true))
       .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (loading) return
+    const now = new Date()
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999)
+    const urgent = tasks.filter((t) => !t.is_completed && !!t.deadline && new Date(t.deadline) <= endOfToday)
+    setDeadlineCount(urgent.length)
+    if (urgent.length > 0 && !sessionStorage.getItem('deadline_notified')) {
+      const overdue = urgent.filter((t) => new Date(t.deadline!) < now).length
+      const dueToday = urgent.length - overdue
+      const parts: string[] = []
+      if (overdue > 0) parts.push(`${overdue} overdue`)
+      if (dueToday > 0) parts.push(`${dueToday} due today`)
+      addToast(`${parts.join(', ')} task${urgent.length > 1 ? 's' : ''}`, 'error')
+      sessionStorage.setItem('deadline_notified', '1')
+    }
+  }, [tasks, loading, setDeadlineCount, addToast])
 
   function handleSelect(id: number, selected: boolean) {
     setSelectedIds((prev) => {
