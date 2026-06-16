@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react'
 import type { Task, Category } from '../types'
 import type { TaskPayload } from '../api/tasks'
+import TagInput from './TagInput'
 import styles from '../styles/TaskModal.module.css'
 
 interface Props {
   task?: Task
   categories: Category[]
+  existingTags: string[]
   onSave: (data: TaskPayload) => void
   onClose: () => void
 }
 
-export default function TaskModal({ task, categories, onSave, onClose }: Props) {
+export default function TaskModal({ task, categories, existingTags, onSave, onClose }: Props) {
   const [title, setTitle] = useState(task?.title ?? '')
   const [description, setDescription] = useState(task?.description ?? '')
   const [deadline, setDeadline] = useState(task?.deadline ? task.deadline.slice(0, 16) : '')
@@ -18,6 +20,7 @@ export default function TaskModal({ task, categories, onSave, onClose }: Props) 
   const [recurrence, setRecurrence] = useState<NonNullable<TaskPayload['recurrence']>>(task?.recurrence ?? 'none')
   const [categoryId, setCategoryId] = useState<number | ''>(task?.category_id ?? '')
   const [notes, setNotes] = useState(task?.notes ?? '')
+  const [tags, setTags] = useState<string[]>(task?.tags.map((t) => t.name) ?? [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -35,6 +38,7 @@ export default function TaskModal({ task, categories, onSave, onClose }: Props) 
       priority,
       recurrence,
       category_id: categoryId !== '' ? categoryId : undefined,
+      tag_names: tags,
     })
   }
 
@@ -63,6 +67,10 @@ export default function TaskModal({ task, categories, onSave, onClose }: Props) 
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+          </div>
+          <div className={styles.field}>
+            <span className={styles.label}>Tags</span>
+            <TagInput tags={tags} suggestions={existingTags} onChange={setTags} />
           </div>
           <div className={styles.field}>
             <label htmlFor="task-notes" className={styles.label}>Notes</label>

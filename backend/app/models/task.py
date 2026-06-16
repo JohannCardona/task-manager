@@ -6,6 +6,7 @@ from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.models.tag import task_tags
 
 
 class Priority(str, Enum):
@@ -43,3 +44,4 @@ class Task(Base):
     subtasks: Mapped[list["Subtask"]] = relationship(
         "Subtask", back_populates="task", cascade="all, delete-orphan", order_by="Subtask.id", lazy="selectin"
     )
+    tags: Mapped[list["Tag"]] = relationship("Tag", secondary=task_tags, lazy="selectin")

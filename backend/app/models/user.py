@@ -19,3 +19,4 @@ class User(Base):
 
     tasks: Mapped[list["Task"]] = relationship("Task", back_populates="owner", cascade="all, delete-orphan")
     categories: Mapped[list["Category"]] = relationship("Category", back_populates="owner", cascade="all, delete-orphan")
+    tags: Mapped[list["Tag"]] = relationship("Tag", back_populates="owner", cascade="all, delete-orphan")

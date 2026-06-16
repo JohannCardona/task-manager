@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.category import Category
+from app.models.tag import Tag
 from app.models.task import Recurrence, Task
 from app.models.user import User
 from app.schemas.task import TaskCreate, TaskOut, TaskUpdate
@@ -19,7 +20,6 @@ def _next_deadline(base: datetime, recurrence: Recurrence) -> datetime:
         return base + timedelta(days=1)
     if recurrence == Recurrence.weekly:
         return base + timedelta(weeks=1)
-    # monthly — same day next month, clamped to last day of month
     month = base.month + 1
     year = base.year
     if month > 12:
@@ -27,6 +27,22 @@ def _next_deadline(base: datetime, recurrence: Recurrence) -> datetime:
     day = min(base.day, calendar.monthrange(year, month)[1])
     return base.replace(year=year, month=month, day=day)
 
+
+def _resolve_tags(tag_names: list[str], owner_id: int, db: Session) -> list[Tag]:
+    tags = []
+    seen: set[str] = set()
+    for raw in tag_names:
+        name = raw.strip().lower()
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        tag = db.query(Tag).filter(Tag.name == name, Tag.owner_id == owner_id).first()
+        if not tag:
+            tag = Tag(name=name, owner_id=owner_id)
+            db.add(tag)
+            db.flush()
+        tags.append(tag)
+    return tags
 
 
 class ReorderPayload(BaseModel):
@@ -91,7 +107,9 @@ def create_task(
     max_pos = db.query(func.max(Task.position)).filter(Task.owner_id == current_user.id).scalar()
     next_pos = (max_pos + 1) if max_pos is not None else 0
 
-    task = Task(**payload.model_dump(), owner_id=current_user.id, position=next_pos)
+    data = payload.model_dump(exclude={"tag_names"})
+    task = Task(**data, owner_id=current_user.id, position=next_pos)
+    task.tags = _resolve_tags(payload.tag_names, current_user.id, db)
     db.add(task)
     db.commit()
     db.refresh(task)
@@ -119,8 +137,11 @@ def update_task(
 
     becoming_complete = payload.is_completed is True and not task.is_completed
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    for field, value in payload.model_dump(exclude_unset=True, exclude={"tag_names"}).items():
         setattr(task, field, value)
+
+    if payload.tag_names is not None:
+        task.tags = _resolve_tags(payload.tag_names, current_user.id, db)
 
     db.commit()
     db.refresh(task)
@@ -139,6 +160,7 @@ def update_task(
             owner_id=task.owner_id,
             position=(max_pos + 1) if max_pos is not None else 0,
         )
+        next_task.tags = list(task.tags)
         db.add(next_task)
         db.commit()
 

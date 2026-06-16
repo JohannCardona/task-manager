@@ -9,6 +9,7 @@ export interface TaskPayload {
   priority: 'low' | 'medium' | 'high'
   recurrence?: 'none' | 'daily' | 'weekly' | 'monthly'
   category_id?: number
+  tag_names?: string[]
 }
 
 export const getTasks = (): Promise<Task[]> =>

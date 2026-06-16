@@ -6,6 +6,11 @@ export interface User {
   timezone: string
 }
 
+export interface Tag {
+  id: number
+  name: string
+}
+
 export interface Category {
   id: number
   name: string
@@ -39,6 +44,7 @@ export interface Task {
   created_at: string
   updated_at: string
   subtasks: Subtask[]
+  tags: Tag[]
 }
 
 export interface Token {

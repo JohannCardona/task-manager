@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 from app.models.task import Priority, Recurrence
 from app.schemas.subtask import SubtaskOut
+from app.schemas.tag import TagOut
 
 
 class TaskCreate(BaseModel):
@@ -14,6 +15,7 @@ class TaskCreate(BaseModel):
     priority: Priority = Priority.medium
     recurrence: Recurrence = Recurrence.none
     category_id: int | None = None
+    tag_names: list[str] = []
 
 
 class TaskUpdate(BaseModel):
@@ -25,6 +27,7 @@ class TaskUpdate(BaseModel):
     priority: Priority | None = None
     recurrence: Recurrence | None = None
     category_id: int | None = None
+    tag_names: list[str] | None = None
 
 
 class TaskOut(BaseModel):
@@ -42,5 +45,6 @@ class TaskOut(BaseModel):
     created_at: datetime
     updated_at: datetime
     subtasks: list[SubtaskOut] = []
+    tags: list[TagOut] = []
 
     model_config = {"from_attributes": True}

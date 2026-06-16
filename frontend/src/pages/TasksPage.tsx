@@ -55,6 +55,7 @@ export default function TasksPage() {
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
   const [filterPriority, setFilterPriority] = useState<'all' | 'low' | 'medium' | 'high'>('all')
   const [filterCategory, setFilterCategory] = useState<number | 'all' | 'none'>('all')
+  const [filterTag, setFilterTag] = useState<string | null>(null)
   const [sort, setSort] = useState<SortKey>('created')
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState(false)
@@ -317,16 +318,22 @@ export default function TasksPage() {
       if (filterPriority !== 'all' && t.priority !== filterPriority) return false
       if (filterCategory === 'none' && t.category_id !== null) return false
       if (typeof filterCategory === 'number' && t.category_id !== filterCategory) return false
+      if (filterTag && !t.tags.some((tag) => tag.name === filterTag)) return false
       return true
     })
     return sortTasks(filtered, sort)
-  }, [tasks, filter, sort, search, filterPriority, filterCategory])
+  }, [tasks, filter, sort, search, filterPriority, filterCategory, filterTag])
+
+  const existingTags = useMemo(
+    () => [...new Set(tasks.flatMap((t) => t.tags.map((tag) => tag.name)))].sort(),
+    [tasks]
+  )
 
   const totalPages = Math.max(1, Math.ceil(displayed.length / PAGE_SIZE))
   const safePage = Math.min(page, totalPages)
   const paginated = displayed.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
-  useEffect(() => { setPage(1) }, [search, filter, sort, filterPriority, filterCategory])
+  useEffect(() => { setPage(1) }, [search, filter, sort, filterPriority, filterCategory, filterTag])
 
   const allSelected = paginated.length > 0 && paginated.every((t) => selectedIds.has(t.id))
 
@@ -343,6 +350,7 @@ export default function TasksPage() {
           onToggle={handleToggle}
           onEdit={openEdit}
           onDelete={handleDelete}
+          onTagClick={(tag) => setFilterTag((prev) => (prev === tag ? null : tag))}
         />
       ))}
     </div>
@@ -392,6 +400,19 @@ export default function TasksPage() {
               </button>
             ))}
           </div>
+
+          {filterTag && (
+            <div className={styles.sortWrapper}>
+              <button
+                type="button"
+                className={`${styles.filterBtn} ${styles.active}`}
+                onClick={() => setFilterTag(null)}
+                title="Clear tag filter"
+              >
+                #{filterTag} ×
+              </button>
+            </div>
+          )}
 
           <div className={styles.sortWrapper}>
             <select
@@ -547,6 +568,7 @@ export default function TasksPage() {
         <TaskModal
           task={editing}
           categories={categories}
+          existingTags={existingTags}
           onSave={handleSaveTask}
           onClose={closeTaskModal}
         />

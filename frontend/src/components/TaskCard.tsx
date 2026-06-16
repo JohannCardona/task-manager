@@ -15,11 +15,12 @@ interface Props {
   onToggle: (task: Task) => void
   onEdit: (task: Task) => void
   onDelete: (id: number) => void
+  onTagClick?: (tag: string) => void
 }
 
 const PRIORITY_LABEL = { low: 'Low', medium: 'Medium', high: 'High' }
 
-export default function TaskCard({ task, categories, sortable = false, isSelected = false, onSelect, onToggle, onEdit, onDelete }: Props) {
+export default function TaskCard({ task, categories, sortable = false, isSelected = false, onSelect, onToggle, onEdit, onDelete, onTagClick }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks)
   const [newSubtask, setNewSubtask] = useState('')
@@ -156,6 +157,16 @@ export default function TaskCard({ task, categories, sortable = false, isSelecte
         {task.notes && (
           <span className={styles.notesIndicator} title={task.notes}>Notes</span>
         )}
+        {task.tags.map((tag) => (
+          <button
+            key={tag.id}
+            type="button"
+            className={styles.tag}
+            onClick={() => onTagClick?.(tag.name)}
+          >
+            #{tag.name}
+          </button>
+        ))}
       </div>
 
       <div className={styles.subtasks}>
