@@ -29,6 +29,15 @@ export interface Subtask {
   created_at: string
 }
 
+export interface Attachment {
+  id: number
+  task_id: number
+  filename: string
+  content_type: string
+  size: number
+  created_at: string
+}
+
 export interface Task {
   id: number
   title: string
@@ -45,6 +54,7 @@ export interface Task {
   updated_at: string
   subtasks: Subtask[]
   tags: Tag[]
+  attachments: Attachment[]
 }
 
 export interface Token {

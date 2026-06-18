@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     smtp_from: str = ""
     email_notifications_enabled: bool = False
 
+    # File attachments
+    upload_dir: str = "uploads"
+    max_upload_size_mb: int = 5
+
     class Config:
         env_file = ".env"
 

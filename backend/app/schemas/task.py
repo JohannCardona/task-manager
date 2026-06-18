@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from app.models.task import Priority, Recurrence
+from app.schemas.attachment import AttachmentOut
 from app.schemas.subtask import SubtaskOut
 from app.schemas.tag import TagOut
 
@@ -46,5 +47,6 @@ class TaskOut(BaseModel):
     updated_at: datetime
     subtasks: list[SubtaskOut] = []
     tags: list[TagOut] = []
+    attachments: list[AttachmentOut] = []
 
     model_config = {"from_attributes": True}

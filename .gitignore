@@ -213,3 +213,6 @@ __marimo__/
 # Node / React
 node_modules/
 frontend/dist/
+
+# Uploaded file attachments (local dev storage)
+backend/uploads/

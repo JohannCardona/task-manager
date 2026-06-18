@@ -1,10 +1,17 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { Task, Category, Subtask } from '../types'
+import type { Task, Category, Subtask, Attachment } from '../types'
 import * as subtasksApi from '../api/subtasks'
+import * as attachmentsApi from '../api/attachments'
 import { useToast } from '../context/ToastContext'
 import styles from '../styles/TaskCard.module.css'
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 interface Props {
   task: Task
@@ -24,6 +31,9 @@ export default function TaskCard({ task, categories, sortable = false, isSelecte
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks)
   const [newSubtask, setNewSubtask] = useState('')
+  const [attachments, setAttachments] = useState<Attachment[]>(task.attachments)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const { addToast } = useToast()
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
@@ -68,6 +78,39 @@ export default function TaskCard({ task, categories, sortable = false, isSelecte
       setNewSubtask('')
     } catch {
       addToast('Failed to add subtask', 'error')
+    }
+  }
+
+  async function handleUploadAttachment(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const created = await attachmentsApi.uploadAttachment(task.id, file)
+      setAttachments((prev) => [...prev, created])
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
+      addToast(msg ?? 'Failed to upload file', 'error')
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  async function handleDeleteAttachment(attachmentId: number) {
+    try {
+      await attachmentsApi.deleteAttachment(task.id, attachmentId)
+      setAttachments((prev) => prev.filter((a) => a.id !== attachmentId))
+    } catch {
+      addToast('Failed to delete attachment', 'error')
+    }
+  }
+
+  async function handleDownloadAttachment(attachment: Attachment) {
+    try {
+      await attachmentsApi.downloadAttachment(task.id, attachment)
+    } catch {
+      addToast('Failed to download attachment', 'error')
     }
   }
 
@@ -204,6 +247,41 @@ export default function TaskCard({ task, categories, sortable = false, isSelecte
           />
           <button type="submit" className={styles.subtaskAdd}>Add</button>
         </form>
+      </div>
+
+      <div className={styles.attachments}>
+        {attachments.map((attachment) => (
+          <div key={attachment.id} className={styles.attachmentRow}>
+            <button
+              type="button"
+              className={styles.attachmentName}
+              onClick={() => handleDownloadAttachment(attachment)}
+              title={`Download ${attachment.filename}`}
+            >
+              📎 {attachment.filename}
+            </button>
+            <span className={styles.attachmentSize}>{formatSize(attachment.size)}</span>
+            <button
+              type="button"
+              className={styles.subtaskDelete}
+              aria-label={`Delete attachment ${attachment.filename}`}
+              onClick={() => handleDeleteAttachment(attachment.id)}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+
+        <label className={styles.attachmentAdd}>
+          {uploading ? 'Uploading…' : '+ Add attachment'}
+          <input
+            ref={fileInputRef}
+            type="file"
+            className={styles.attachmentInput}
+            onChange={handleUploadAttachment}
+            disabled={uploading}
+          />
+        </label>
       </div>
     </div>
   )
