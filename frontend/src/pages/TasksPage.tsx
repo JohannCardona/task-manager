@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
@@ -15,34 +15,9 @@ import { useToast } from '../context/ToastContext'
 import { useNotifications } from '../context/NotificationContext'
 import { exportCSV, exportPDF } from '../utils/export'
 import ConfirmInline from '../components/ConfirmInline'
+import { useTaskFilters } from '../hooks/useTaskFilters'
+import { useBulkSelect } from '../hooks/useBulkSelect'
 import styles from '../styles/TasksPage.module.css'
-
-type SortKey = 'created' | 'deadline' | 'priority' | 'status'
-
-const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 }
-
-function sortTasks(tasks: Task[], sort: SortKey): Task[] {
-  return [...tasks].sort((a, b) => {
-    switch (sort) {
-      case 'deadline': {
-        if (!a.deadline && !b.deadline) return 0
-        if (!a.deadline) return 1
-        if (!b.deadline) return -1
-        return new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
-      }
-      case 'priority':
-        return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]
-      case 'status':
-        return Number(a.is_completed) - Number(b.is_completed)
-      default: {
-        if (a.position !== null && b.position !== null) return a.position - b.position
-        if (a.position !== null) return -1
-        if (b.position !== null) return 1
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      }
-    }
-  })
-}
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -52,22 +27,31 @@ export default function TasksPage() {
   const [showCategoryManager, setShowCategoryManager] = useState(false)
   const [editing, setEditing] = useState<Task | undefined>()
   const [editingCategory, setEditingCategory] = useState<Category | undefined>()
-  const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
-  const [filterPriority, setFilterPriority] = useState<'all' | 'low' | 'medium' | 'high'>('all')
-  const [filterCategory, setFilterCategory] = useState<number | 'all' | 'none'>('all')
-  const [filterTag, setFilterTag] = useState<string | null>(null)
-  const [sort, setSort] = useState<SortKey>('created')
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState(false)
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
-  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
-  const [page, setPage] = useState(1)
   const { addToast } = useToast()
   const { setDeadlineCount } = useNotifications()
   const navigate = useNavigate()
 
-  const PAGE_SIZE = 10
+  const {
+    search, setSearch,
+    filter, setFilter,
+    filterPriority, setFilterPriority,
+    filterCategory, setFilterCategory,
+    filterTag, setFilterTag,
+    sort, setSort,
+    page, setPage,
+    displayed, existingTags,
+    totalPages, safePage, paginated,
+  } = useTaskFilters(tasks)
+
+  const {
+    selectedIds,
+    confirmBulkDelete, setConfirmBulkDelete,
+    handleSelect, handleSelectAll, clearSelection,
+    handleBulkComplete, handleBulkCategory, handleBulkDelete,
+    allSelected,
+  } = useBulkSelect({ tasks, displayed, paginated, setTasks })
 
   const isDraggable = sort === 'created' && filter === 'all' && !search.trim()
 
@@ -76,7 +60,7 @@ export default function TasksPage() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
-  async function fetchTasks() {
+  async function fetchTasks(): Promise<void> {
     try {
       const fetched = await tasksApi.getTasks()
       setTasks(fetched)
@@ -112,71 +96,7 @@ export default function TasksPage() {
     }
   }, [tasks, loading, setDeadlineCount, addToast])
 
-  function handleSelect(id: number, selected: boolean) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (selected) next.add(id)
-      else next.delete(id)
-      return next
-    })
-  }
-
-  function handleSelectAll() {
-    if (selectedIds.size === displayed.length) {
-      setSelectedIds(new Set())
-    } else {
-      setSelectedIds(new Set(displayed.map((t) => t.id)))
-    }
-  }
-
-  function clearSelection() {
-    setSelectedIds(new Set())
-    setConfirmBulkDelete(false)
-  }
-
-  async function handleBulkComplete(completed: boolean) {
-    const ids = [...selectedIds]
-    const prev = tasks
-    setTasks((ts) => ts.map((t) => ids.includes(t.id) ? { ...t, is_completed: completed } : t))
-    addToast(`${ids.length} task${ids.length > 1 ? 's' : ''} ${completed ? 'completed' : 'reopened'}`)
-    clearSelection()
-    try {
-      await Promise.all(ids.map((id) => tasksApi.updateTask(id, { is_completed: completed })))
-    } catch {
-      setTasks(prev)
-      addToast('Failed to update tasks', 'error')
-    }
-  }
-
-  async function handleBulkCategory(categoryId: number | null) {
-    const ids = [...selectedIds]
-    const prev = tasks
-    setTasks((ts) => ts.map((t) => ids.includes(t.id) ? { ...t, category_id: categoryId } : t))
-    addToast(`Category updated for ${ids.length} task${ids.length > 1 ? 's' : ''}`)
-    clearSelection()
-    try {
-      await Promise.all(ids.map((id) => tasksApi.updateTask(id, { category_id: categoryId ?? undefined })))
-    } catch {
-      setTasks(prev)
-      addToast('Failed to update category', 'error')
-    }
-  }
-
-  async function handleBulkDelete() {
-    const ids = [...selectedIds]
-    const prev = tasks
-    setTasks((ts) => ts.filter((t) => !selectedIds.has(t.id)))
-    addToast(`${ids.length} task${ids.length > 1 ? 's' : ''} deleted`)
-    clearSelection()
-    try {
-      await Promise.all(ids.map((id) => tasksApi.deleteTask(id)))
-    } catch {
-      setTasks(prev)
-      addToast('Failed to delete tasks', 'error')
-    }
-  }
-
-  async function handleSaveTask(data: TaskPayload) {
+  async function handleSaveTask(data: TaskPayload): Promise<void> {
     if (editing) {
       const prev = tasks
       const optimistic = { ...editing, ...data, category_id: data.category_id ?? null }
@@ -206,52 +126,7 @@ export default function TasksPage() {
     }
   }
 
-  function openCategoryModalFromManager(cat?: Category) {
-    setShowCategoryManager(false)
-    setEditingCategory(cat)
-    setShowCategoryModal(true)
-  }
-
-  function closeCategoryModal() {
-    setShowCategoryModal(false)
-    setEditingCategory(undefined)
-    setShowCategoryManager(true)
-  }
-
-  async function handleSaveCategory(name: string, color: string) {
-    if (editingCategory) {
-      try {
-        const updated = await categoriesApi.updateCategory(editingCategory.id, name, color)
-        setCategories((prev) => prev.map((c) => c.id === updated.id ? updated : c))
-        closeCategoryModal()
-        addToast('Category updated')
-      } catch {
-        addToast('Failed to update category', 'error')
-      }
-      return
-    }
-    try {
-      const created = await categoriesApi.createCategory(name, color)
-      setCategories((prev) => [...prev, created])
-      closeCategoryModal()
-      addToast('Category created')
-    } catch {
-      addToast('Failed to create category', 'error')
-    }
-  }
-
-  async function handleDeleteCategory(id: number) {
-    try {
-      await categoriesApi.deleteCategory(id)
-      setCategories((prev) => prev.filter((c) => c.id !== id))
-      setTasks((prev) => prev.map((t) => t.category_id === id ? { ...t, category_id: null } : t))
-      addToast('Category deleted')
-    } catch {
-      addToast('Failed to delete category', 'error')
-    }
-  }
-
-  async function handleToggle(task: Task) {
+  async function handleToggle(task: Task): Promise<void> {
     const completing = !task.is_completed
     const prev = tasks
     if (!(completing && task.recurrence !== 'none')) {
@@ -271,7 +146,7 @@ export default function TasksPage() {
     }
   }
 
-  async function handleDelete(id: number) {
+  async function handleDelete(id: number): Promise<void> {
     const prev = tasks
     setTasks((ts) => ts.filter((t) => t.id !== id))
     addToast('Task deleted')
@@ -283,16 +158,13 @@ export default function TasksPage() {
     }
   }
 
-  async function handleDragEnd(event: DragEndEvent) {
+  async function handleDragEnd(event: DragEndEvent): Promise<void> {
     const { active, over } = event
     if (!over || active.id === over.id) return
-
     const oldIndex = displayed.findIndex((t) => t.id === active.id)
     const newIndex = displayed.findIndex((t) => t.id === over.id)
     const reordered = arrayMove(displayed, oldIndex, newIndex).map((t, i) => ({ ...t, position: i }))
-
     setTasks(reordered)
-
     try {
       await tasksApi.reorderTasks(reordered.map((t) => t.id))
     } catch {
@@ -300,43 +172,60 @@ export default function TasksPage() {
     }
   }
 
-  function openEdit(task: Task) {
+  function openEdit(task: Task): void {
     setEditing(task)
     setShowTaskModal(true)
   }
 
-  function closeTaskModal() {
+  function closeTaskModal(): void {
     setShowTaskModal(false)
     setEditing(undefined)
   }
 
-  const displayed = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    const filtered = tasks.filter((t) => {
-      if (filter === 'active' && t.is_completed) return false
-      if (filter === 'completed' && !t.is_completed) return false
-      if (q && !t.title.toLowerCase().includes(q) && !(t.description ?? '').toLowerCase().includes(q)) return false
-      if (filterPriority !== 'all' && t.priority !== filterPriority) return false
-      if (filterCategory === 'none' && t.category_id !== null) return false
-      if (typeof filterCategory === 'number' && t.category_id !== filterCategory) return false
-      if (filterTag && !t.tags.some((tag) => tag.name === filterTag)) return false
-      return true
-    })
-    return sortTasks(filtered, sort)
-  }, [tasks, filter, sort, search, filterPriority, filterCategory, filterTag])
+  function openCategoryModalFromManager(cat?: Category): void {
+    setShowCategoryManager(false)
+    setEditingCategory(cat)
+    setShowCategoryModal(true)
+  }
 
-  const existingTags = useMemo(
-    () => [...new Set(tasks.flatMap((t) => t.tags.map((tag) => tag.name)))].sort(),
-    [tasks]
-  )
+  function closeCategoryModal(): void {
+    setShowCategoryModal(false)
+    setEditingCategory(undefined)
+    setShowCategoryManager(true)
+  }
 
-  const totalPages = Math.max(1, Math.ceil(displayed.length / PAGE_SIZE))
-  const safePage = Math.min(page, totalPages)
-  const paginated = displayed.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+  async function handleSaveCategory(name: string, color: string): Promise<void> {
+    if (editingCategory) {
+      try {
+        const updated = await categoriesApi.updateCategory(editingCategory.id, name, color)
+        setCategories((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
+        closeCategoryModal()
+        addToast('Category updated')
+      } catch {
+        addToast('Failed to update category', 'error')
+      }
+      return
+    }
+    try {
+      const created = await categoriesApi.createCategory(name, color)
+      setCategories((prev) => [...prev, created])
+      closeCategoryModal()
+      addToast('Category created')
+    } catch {
+      addToast('Failed to create category', 'error')
+    }
+  }
 
-  useEffect(() => { setPage(1) }, [search, filter, sort, filterPriority, filterCategory, filterTag])
-
-  const allSelected = paginated.length > 0 && paginated.every((t) => selectedIds.has(t.id))
+  async function handleDeleteCategory(id: number): Promise<void> {
+    try {
+      await categoriesApi.deleteCategory(id)
+      setCategories((prev) => prev.filter((c) => c.id !== id))
+      setTasks((prev) => prev.map((t) => (t.category_id === id ? { ...t, category_id: null } : t)))
+      addToast('Category deleted')
+    } catch {
+      addToast('Failed to delete category', 'error')
+    }
+  }
 
   const list = (
     <div className={styles.list}>
@@ -453,7 +342,7 @@ export default function TasksPage() {
               id="sort-select"
               className={styles.sortSelect}
               value={sort}
-              onChange={(e) => setSort(e.target.value as SortKey)}
+              onChange={(e) => setSort(e.target.value as typeof sort)}
             >
               <option value="created">Custom order</option>
               <option value="deadline">Deadline</option>
