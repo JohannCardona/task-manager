@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import type { Category } from '../types'
+import { useModalEscape } from '../hooks/useModalEscape'
 import styles from '../styles/CategoryManagerModal.module.css'
 
 interface Props {
@@ -13,11 +14,7 @@ interface Props {
 export default function CategoryManagerModal({ categories, onEdit, onDelete, onNew, onClose }: Props) {
   const [confirmId, setConfirmId] = useState<number | null>(null)
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  useModalEscape(onClose)
 
   return (
     <div className={styles.overlay} onClick={onClose}>

@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import type { Category } from '../types'
+import { useModalEscape } from '../hooks/useModalEscape'
 import styles from '../styles/CategoryModal.module.css'
 
 const PRESET_COLORS = [
@@ -17,11 +18,7 @@ export default function CategoryModal({ category, onSave, onClose }: Props) {
   const [name, setName] = useState(category?.name ?? '')
   const [color, setColor] = useState(category?.color ?? PRESET_COLORS[0])
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  useModalEscape(onClose)
 
   function handleSubmit(e: { preventDefault(): void }) {
     e.preventDefault()

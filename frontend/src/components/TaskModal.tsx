@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import type { Task, Category } from '../types'
 import type { TaskPayload } from '../api/tasks'
 import TagInput from './TagInput'
+import { useModalEscape } from '../hooks/useModalEscape'
 import styles from '../styles/TaskModal.module.css'
 
 interface Props {
@@ -22,11 +23,7 @@ export default function TaskModal({ task, categories, existingTags, onSave, onCl
   const [notes, setNotes] = useState(task?.notes ?? '')
   const [tags, setTags] = useState<string[]>(task?.tags.map((t) => t.name) ?? [])
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  useModalEscape(onClose)
 
   function handleSubmit(e: { preventDefault(): void }) {
     e.preventDefault()
