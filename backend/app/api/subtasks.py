@@ -4,18 +4,11 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.subtask import Subtask
-from app.models.task import Task
 from app.models.user import User
 from app.schemas.subtask import SubtaskCreate, SubtaskOut, SubtaskUpdate
+from app.api._utils import get_owned_task
 
 router = APIRouter(prefix="/tasks/{task_id}/subtasks", tags=["subtasks"])
-
-
-def _get_owned_task(task_id: int, current_user: User, db: Session) -> Task:
-    task = db.query(Task).filter(Task.id == task_id, Task.owner_id == current_user.id).first()
-    if not task:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
-    return task
 
 
 @router.post("/", response_model=SubtaskOut, status_code=status.HTTP_201_CREATED)
@@ -25,7 +18,7 @@ def create_subtask(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Subtask:
-    _get_owned_task(task_id, current_user, db)
+    get_owned_task(task_id, current_user, db)
     subtask = Subtask(task_id=task_id, title=payload.title)
     db.add(subtask)
     db.commit()
@@ -41,7 +34,7 @@ def update_subtask(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Subtask:
-    _get_owned_task(task_id, current_user, db)
+    get_owned_task(task_id, current_user, db)
     subtask = db.query(Subtask).filter(Subtask.id == subtask_id, Subtask.task_id == task_id).first()
     if not subtask:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subtask not found")
@@ -61,7 +54,7 @@ def delete_subtask(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> None:
-    _get_owned_task(task_id, current_user, db)
+    get_owned_task(task_id, current_user, db)
     subtask = db.query(Subtask).filter(Subtask.id == subtask_id, Subtask.task_id == task_id).first()
     if not subtask:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subtask not found")

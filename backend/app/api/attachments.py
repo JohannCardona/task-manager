@@ -9,18 +9,11 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.attachment import Attachment
-from app.models.task import Task
 from app.models.user import User
 from app.schemas.attachment import AttachmentOut
+from app.api._utils import get_owned_task
 
 router = APIRouter(prefix="/tasks/{task_id}/attachments", tags=["attachments"])
-
-
-def _get_owned_task(task_id: int, current_user: User, db: Session) -> Task:
-    task = db.query(Task).filter(Task.id == task_id, Task.owner_id == current_user.id).first()
-    if not task:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
-    return task
 
 
 def _upload_dir() -> Path:
@@ -36,7 +29,7 @@ async def upload_attachment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Attachment:
-    _get_owned_task(task_id, current_user, db)
+    get_owned_task(task_id, current_user, db)
 
     max_size = settings.max_upload_size_mb * 1024 * 1024
     contents = await file.read()
@@ -70,7 +63,7 @@ def download_attachment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> FileResponse:
-    _get_owned_task(task_id, current_user, db)
+    get_owned_task(task_id, current_user, db)
     attachment = db.query(Attachment).filter(Attachment.id == attachment_id, Attachment.task_id == task_id).first()
     if not attachment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Attachment not found")
@@ -89,7 +82,7 @@ def delete_attachment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> None:
-    _get_owned_task(task_id, current_user, db)
+    get_owned_task(task_id, current_user, db)
     attachment = db.query(Attachment).filter(Attachment.id == attachment_id, Attachment.task_id == task_id).first()
     if not attachment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Attachment not found")
