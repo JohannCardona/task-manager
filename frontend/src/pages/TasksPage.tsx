@@ -14,6 +14,7 @@ import type { TaskPayload } from '../api/tasks'
 import { useToast } from '../context/ToastContext'
 import { useNotifications } from '../context/NotificationContext'
 import { exportCSV, exportPDF } from '../utils/export'
+import ConfirmInline from '../components/ConfirmInline'
 import styles from '../styles/TasksPage.module.css'
 
 type SortKey = 'created' | 'deadline' | 'priority' | 'status'
@@ -492,11 +493,11 @@ export default function TasksPage() {
               ))}
             </select>
             {confirmBulkDelete ? (
-              <>
-                <span className={styles.bulkConfirm}>Delete {selectedIds.size}?</span>
-                <button type="button" className={`${styles.bulkBtn} ${styles.bulkDanger}`} onClick={handleBulkDelete}>Yes</button>
-                <button type="button" className={styles.bulkBtn} onClick={() => setConfirmBulkDelete(false)}>No</button>
-              </>
+              <ConfirmInline
+                message={`Delete ${selectedIds.size}?`}
+                onConfirm={handleBulkDelete}
+                onCancel={() => setConfirmBulkDelete(false)}
+              />
             ) : (
               <button type="button" className={`${styles.bulkBtn} ${styles.bulkDanger}`} onClick={() => setConfirmBulkDelete(true)}>Delete</button>
             )}

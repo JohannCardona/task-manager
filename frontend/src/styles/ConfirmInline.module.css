@@ -1,0 +1,35 @@
+.text {
+  font-size: 0.8rem;
+  color: var(--error);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.625rem;
+  font-size: 0.8rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.danger {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.danger:hover {
+  background: var(--error);
+  color: #fff;
+  border-color: var(--error);
+}

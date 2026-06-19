@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Category } from '../types'
 import { useModalEscape } from '../hooks/useModalEscape'
+import ConfirmInline from './ConfirmInline'
 import styles from '../styles/CategoryManagerModal.module.css'
 
 interface Props {
@@ -31,21 +32,10 @@ export default function CategoryManagerModal({ categories, onEdit, onDelete, onN
                 <span className={styles.name} style={{ color: cat.color }}>{cat.name}</span>
                 {confirmId === cat.id ? (
                   <span className={styles.confirm}>
-                    <span className={styles.confirmText}>Delete?</span>
-                    <button
-                      type="button"
-                      className={`${styles.btn} ${styles.danger}`}
-                      onClick={() => { onDelete(cat.id); setConfirmId(null) }}
-                    >
-                      Yes
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.btn}
-                      onClick={() => setConfirmId(null)}
-                    >
-                      No
-                    </button>
+                    <ConfirmInline
+                      onConfirm={() => { onDelete(cat.id); setConfirmId(null) }}
+                      onCancel={() => setConfirmId(null)}
+                    />
                   </span>
                 ) : (
                   <span className={styles.actions}>

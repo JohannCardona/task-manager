@@ -5,6 +5,7 @@ import type { Task, Category, Subtask, Attachment } from '../types'
 import * as subtasksApi from '../api/subtasks'
 import * as attachmentsApi from '../api/attachments'
 import { useToast } from '../context/ToastContext'
+import ConfirmInline from './ConfirmInline'
 import styles from '../styles/TaskCard.module.css'
 
 function formatSize(bytes: number): string {
@@ -147,25 +148,7 @@ export default function TaskCard({ task, categories, sortable = false, isSelecte
         </label>
         <div className={styles.actions}>
           {confirmDelete ? (
-            <>
-              <span className={styles.confirmText}>Delete?</span>
-              <button
-                type="button"
-                className={`${styles.btn} ${styles.danger}`}
-                aria-label={`Confirm delete ${task.title}`}
-                onClick={() => onDelete(task.id)}
-              >
-                Yes
-              </button>
-              <button
-                type="button"
-                className={styles.btn}
-                aria-label="Cancel delete"
-                onClick={() => setConfirmDelete(false)}
-              >
-                No
-              </button>
-            </>
+            <ConfirmInline onConfirm={() => onDelete(task.id)} onCancel={() => setConfirmDelete(false)} />
           ) : (
             <>
               <button type="button" className={styles.btn} aria-label={`Edit ${task.title}`} onClick={() => onEdit(task)}>Edit</button>
